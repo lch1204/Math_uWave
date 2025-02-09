@@ -63,7 +63,7 @@ struct Obstacle {
 //путь луча
 struct RayPath {
     vector<Point3D> path;
-    double attenuation;
+    double attenuation; //затухание
     double delay;
     double weight;
 };

@@ -28,12 +28,13 @@ public:
     }
 
     vector<double> receive_signal(const Point3D& sender_pos,
-                                  const SignalPropagation& propagation) {
+                                  const RayPath& selected_path) {
         vector<double> delays;
-        for(const auto& path : propagation.get_paths()) {
-            double delay = path.delay + noise_dist(gen);
-            delays.push_back(delay);
-        }
+
+        // Добавляем шум к задержке выбранного пути
+        double delay = selected_path.delay + noise_dist(gen);
+        delays.push_back(delay);
+
         return delays;
     }
 

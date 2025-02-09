@@ -1,6 +1,7 @@
 #ifndef READERJSON_H
 #define READERJSON_H
 
+#include "include/nlohmann/json_fwd.hpp"
 #include "stucturs.h"
 #include <nlohmann/json.hpp>
 #include <vector>
