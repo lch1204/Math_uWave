@@ -2,14 +2,24 @@ QT = core
 
 CONFIG += c++17 cmdline
 
-# You can make your code fail to compile if it uses deprecated APIs.
-# In order to do so, uncomment the following line.
-#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
-
 SOURCES += \
-        main.cpp
+        main.cpp \
+        readerjson.cpp \
+        sensormove.cpp \
+        signalpropagation.cpp
 
-# Default rules for deployment.
-qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
-!isEmpty(target.path): INSTALLS += target
+HEADERS += \
+    readerjson.h \
+    sensormove.h \
+    signalpropagation.h \
+    stucturs.h \
+    sensor_uwave.h
+
+INCLUDEPATH += $$PWD/include
+
+# Указываем, что бинарник будет собираться в папке config
+DESTDIR = $$PWD/config
+
+# Указываем путь установки (если нужно)
+target.path = $$PWD/config
+INSTALLS += target

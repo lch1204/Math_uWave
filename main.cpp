@@ -1,8 +1,9 @@
-#include <QCoreApplication>
+#include "sensormove.h"
 
-int main(int argc, char *argv[])
+int main()
 {
-    QCoreApplication a(argc, argv);
+    SensorMove move("config.json");
+    move.run_simulation();
 
-    return a.exec();
+    return 0;
 }
