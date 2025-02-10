@@ -9,21 +9,11 @@
     },
     "sound_speed": 1500.0,
     "signal_loss_probability": 0.05,
-    "measurement_delay": 0.3,
+    "measurement_delay": 0.5,
     "timeout": 1.0,
     "initiator": {
         "mobile": false,
         "velocity": [1.5, 0.0, 0.0]
-    },
-    "environment": {
-        "water_surface": {
-            "z_level": 0.0,
-            "surface_type": "silt"
-        },
-        "bottom": {
-            "z_level": -50.0,
-            "surface_type": "silt"
-        }
     },
     "simulation": {
         "time_step": 0.1,
@@ -32,24 +22,17 @@
     },
     "aquarium_walls": {
         "enabled": true,
-        "reflection_loss": 0.8,
-        "front_z": 50.0,
-        "back_z": -50.0,
-        "left_x": -30.0,
-        "right_x": 50.0
+        "left_x": -60.0,        
+        "right_x": 60.0,        
+        "front_y": 50.0,        
+        "back_y": -50.0,        
+        "bottom_z": -50.0,      
+        "top_z": 0.0,           
+        "reflection_loss": 0.8  
     },
      "aquarium": {
         "depth": 50.0,          
         "surface_z": 0.0,       
         "bottom_type": "silt"   
-    },
-    "obstacles": [
-        {
-            "surface_type": "concrete",
-            "reflection_loss": 0.9,
-            "bottom_type": "silt",
-            "obstacle_type": "horizontal",
-            "coordinates": [[0, 0, 0], [10, 10, 10]]
-        }
-    ]
+    }
 }

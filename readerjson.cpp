@@ -22,10 +22,12 @@ void ReaderJson::load(const string &filename) {
         auto& walls_cfg = config["aquarium_walls"];
         walls.enabled = walls_cfg["enabled"];
         walls.reflection_loss = walls_cfg.value("reflection_loss", 0.7);
-        walls.front_z = walls_cfg.value("front_z", 100.0);
-        walls.back_z = walls_cfg.value("back_z", -100.0);
+        walls.front_y = walls_cfg.value("front_y", 100.0);
+        walls.back_y = walls_cfg.value("back_y", -100.0);
         walls.left_x = walls_cfg.value("left_x", -100.0);
         walls.right_x = walls_cfg.value("right_x", 100.0);
+        walls.bottom_z = walls_cfg.value("bottom_z", 100.0);
+        walls.top_z = walls_cfg.value("top_z", 0.0);
     }
 }
 
@@ -33,84 +35,20 @@ vector<Obstacle> ReaderJson::get_obstacles() const {
     vector<Obstacle> obstacles;
     const double INF = numeric_limits<double>::infinity();
 
-    // Пользовательские препятствия
-    for (const auto& obs : config["obstacles"]) {
-        vector<Point3D> vertices;
-        for (const auto& coord : obs["coordinates"]) {
-            vertices.emplace_back(
-                coord[0].get<double>(), // X
-                coord[1].get<double>(), // Y
-                coord[2].get<double>()  // Z
-                );
-        }
-
+    // 1. Добавляем дно
+    if(config.contains("aquarium")) {
         obstacles.emplace_back(
-            vertices,
-            obs["surface_type"].get<std::string>(),
-            obs.value("obstacle_type", "generic"),
-            obs.value("reflection_loss", get_reflection_loss(obs["surface_type"]))
+            vector<Point3D>{
+                {-INF, -INF, config["aquarium"]["depth"].get<double>()},
+                { INF,  INF, config["aquarium"]["depth"].get<double>()}
+            },
+            config["aquarium"]["bottom_type"].get<string>(),
+            "horizontal",  // Тип препятствия
+            get_reflection_loss(config["aquarium"]["bottom_type"].get<string>())
             );
     }
 
-    // Стенки акватории
-    if (walls.enabled) {
-        const auto add_wall = [&](std::vector<Point3D> vertices) {
-            obstacles.emplace_back(
-                vertices,
-                "aquarium_wall",
-                "vertical",
-                walls.reflection_loss
-                );
-        };
-
-        // Передняя и задняя стенки (по Z)
-        add_wall({
-            {walls.left_x, -INF, walls.front_z},
-            {walls.right_x, INF, walls.front_z}
-        });
-        add_wall({
-            {walls.left_x, -INF, walls.back_z},
-            {walls.right_x, INF, walls.back_z}
-        });
-
-        // Левая и правая стенки (по X)
-        add_wall({
-            {walls.left_x, -INF, walls.back_z},
-            {walls.left_x, INF, walls.front_z}
-        });
-        add_wall({
-            {walls.right_x, -INF, walls.back_z},
-            {walls.right_x, INF, walls.front_z}
-        });
-    }
-
-    return obstacles;
-}
-
-double ReaderJson::get_reflection_loss(const string &surface_type) const
-{
-    auto it = reflection_loss_table.find(surface_type);
-    return it != reflection_loss_table.end() ? it->second : 0.5;
-}
-
-vector<Obstacle> ReaderJson::get_aquarium_obstacles() const {
-    vector<Obstacle> obstacles;
-
-    // Константа для бесконечности
-    const double INF = std::numeric_limits<double>::infinity();
-
-    // Дно
-    obstacles.emplace_back(
-        vector<Point3D>{
-            { -INF, -INF, config["aquarium"]["depth"] },
-            {  INF,  INF, config["aquarium"]["depth"] }
-        },
-        config["aquarium"]["bottom_type"].get<string>(),
-        "horizontal",
-        get_reflection_loss(config["aquarium"]["bottom_type"].get<string>())
-        );
-
-    // Поверхность воды
+    // 2. Поверхность воды
     obstacles.emplace_back(
         vector<Point3D>{
             { -INF, -INF, config["aquarium"]["surface_z"] },
@@ -121,6 +59,43 @@ vector<Obstacle> ReaderJson::get_aquarium_obstacles() const {
         get_reflection_loss("water_surface")
         );
 
+    // 3. Стенки акватории (вертикальные по осям X и Y)
+    if (walls.enabled) {
+        const auto add_wall = [&](vector<Point3D> vertices, string surface) {
+            obstacles.emplace_back(
+                vertices,
+                surface,
+                "vertical", // Тип препятствия
+                walls.reflection_loss // Коэффициент отражения
+                );
+        };
+
+        // Стенки по оси X (левая и правая)
+        add_wall(
+            {{walls.left_x, -INF, walls.bottom_z}, {walls.left_x, INF, walls.top_z}}, // Левая стенка
+            "left_wall"
+            );
+        add_wall(
+            {{walls.right_x, -INF, walls.bottom_z}, {walls.right_x, INF, walls.top_z}}, // Правая стенка
+            "right_wall"
+            );
+
+        // Стенки по оси Y (передняя и задняя)
+        add_wall(
+            {{-INF, walls.front_y, walls.bottom_z}, {INF, walls.front_y, walls.top_z}}, // Передняя стенка
+            "front_wall"
+            );
+        add_wall(
+            {{-INF, walls.back_y, walls.bottom_z}, {INF, walls.back_y, walls.top_z}}, // Задняя стенка
+            "back_wall"
+            );
+    }
+
     return obstacles;
+}
+double ReaderJson::get_reflection_loss(const string &surface_type) const
+{
+    auto it = reflection_loss_table.find(surface_type);
+    return it != reflection_loss_table.end() ? it->second : 0.5;
 }
 

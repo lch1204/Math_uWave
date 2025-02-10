@@ -2,7 +2,6 @@
 #include <QDebug>
 #include <cmath>
 #include <iostream>
-#include <ostream>
 #include <qt5/QtCore/qglobal.h>
 #include <random>
 
@@ -64,6 +63,8 @@ void SignalPropagation::calculate_paths(const Point3D& tx, const Point3D& rx, co
 
     // Рассчитываем отраженные пути
     for (const auto& obs : obstacles) {
+        static int i = 0;
+        qDebug() << "i++"<< i++;
         // Находим точку отражения
         Point3D reflection_point = calculate_reflection_point(tx, rx, obs);
         qDebug() <<"fff";
@@ -83,8 +84,8 @@ void SignalPropagation::calculate_paths(const Point3D& tx, const Point3D& rx, co
             }
         }
 
-        // std::cout <<" has_los_to_reflection = "<< has_los_to_reflection << std::endl;
-        // std::cout <<" has_los_from_reflection = "<< has_los_from_reflection << std::endl;
+        std::cout <<" has_los_to_reflection = "<< has_los_to_reflection << std::endl;
+        std::cout <<" has_los_from_reflection = "<< has_los_from_reflection << std::endl;
 
         // Если путь свободен, добавляем отраженный путь
         if (has_los_to_reflection && has_los_from_reflection) {
@@ -115,6 +116,7 @@ void SignalPropagation::calculate_paths(const Point3D& tx, const Point3D& rx, co
 // Вычисление точки отражения
 Point3D SignalPropagation::calculate_reflection_point(const Point3D& tx, const Point3D& rx, const Obstacle& obs) {
     // Для горизонтальных поверхностей (дно, поверхность воды)
+    qDebug() << "тык";
     if (obs.surface_type == "water_surface" || obs.surface_type == "silt" || obs.surface_type == "sand") {
         double surface_z = obs.vertices[0].z;
         double rx_dist = rx.z - surface_z;
@@ -125,6 +127,7 @@ Point3D SignalPropagation::calculate_reflection_point(const Point3D& tx, const P
     // Для вертикальных стенок
     Point3D normal = calculate_surface_normal(obs);
     Point3D intersection = {obs.vertices[0].x, obs.vertices[0].y, obs.vertices[0].z}; // Упрощенное пересечение
+    qDebug() << "obs.vertices[0].x" << obs.vertices[0].x << "obs.vertices[0].y" << obs.vertices[0].y << "obs.vertices[0].z" << obs.vertices[0].z;
     return reflect_point(rx, intersection, normal); // Отражение точки
 }
 
@@ -169,6 +172,7 @@ const RayPath *SignalPropagation::selectPath() const {
     // Суммируем все веса
     double total_weight = 0.0;
     for(const auto& path : multipaths) {
+        qDebug() << "weight" << path.weight;
         total_weight += path.weight;
     }
 

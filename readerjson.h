@@ -38,22 +38,20 @@ public:
 
     struct AquariumWalls {
         bool enabled = false; //стены бассейна false - отключены, иначе учитываются
-        double front_z = 100.0;
-        double back_z = -100.0;
+        double bottom_z = 100.0;
+        double top_z = 0.0;
         double left_x = -100.0;
         double right_x = 100.0;
+        double front_y = 100.0;
+        double back_y = -100.0;
         double reflection_loss = 0.7;
     } walls;
 
     void load(const string& filename);
 
-
-
     vector<Obstacle> get_obstacles() const;
 
     double get_reflection_loss(const string& surface_type) const;
-
-    vector<Obstacle> get_aquarium_obstacles() const;
 };
 
 #endif // READERJSON_H

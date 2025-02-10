@@ -401,10 +401,11 @@ compiler_clean: compiler_moc_predefs_clean
 
 main.o: ../../main.cpp ../../sensormove.h \
 		../../readerjson.h \
+		../../include/nlohmann/json_fwd.hpp \
+		../../include/nlohmann/detail/abi_macros.hpp \
 		../../stucturs.h \
 		../../include/nlohmann/json.hpp \
 		../../include/nlohmann/adl_serializer.hpp \
-		../../include/nlohmann/detail/abi_macros.hpp \
 		../../include/nlohmann/detail/conversions/from_json.hpp \
 		../../include/nlohmann/detail/exceptions.hpp \
 		../../include/nlohmann/detail/value_t.hpp \
@@ -419,7 +420,6 @@ main.o: ../../main.cpp ../../sensormove.h \
 		../../include/nlohmann/detail/iterators/iterator_traits.hpp \
 		../../include/nlohmann/detail/meta/call_std/begin.hpp \
 		../../include/nlohmann/detail/meta/call_std/end.hpp \
-		../../include/nlohmann/json_fwd.hpp \
 		../../include/nlohmann/detail/string_concat.hpp \
 		../../include/nlohmann/detail/meta/identity_tag.hpp \
 		../../include/nlohmann/detail/meta/std_fs.hpp \
@@ -453,10 +453,11 @@ main.o: ../../main.cpp ../../sensormove.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../../main.cpp
 
 readerjson.o: ../../readerjson.cpp ../../readerjson.h \
+		../../include/nlohmann/json_fwd.hpp \
+		../../include/nlohmann/detail/abi_macros.hpp \
 		../../stucturs.h \
 		../../include/nlohmann/json.hpp \
 		../../include/nlohmann/adl_serializer.hpp \
-		../../include/nlohmann/detail/abi_macros.hpp \
 		../../include/nlohmann/detail/conversions/from_json.hpp \
 		../../include/nlohmann/detail/exceptions.hpp \
 		../../include/nlohmann/detail/value_t.hpp \
@@ -471,7 +472,6 @@ readerjson.o: ../../readerjson.cpp ../../readerjson.h \
 		../../include/nlohmann/detail/iterators/iterator_traits.hpp \
 		../../include/nlohmann/detail/meta/call_std/begin.hpp \
 		../../include/nlohmann/detail/meta/call_std/end.hpp \
-		../../include/nlohmann/json_fwd.hpp \
 		../../include/nlohmann/detail/string_concat.hpp \
 		../../include/nlohmann/detail/meta/identity_tag.hpp \
 		../../include/nlohmann/detail/meta/std_fs.hpp \
@@ -504,10 +504,11 @@ readerjson.o: ../../readerjson.cpp ../../readerjson.h \
 
 sensormove.o: ../../sensormove.cpp ../../sensormove.h \
 		../../readerjson.h \
+		../../include/nlohmann/json_fwd.hpp \
+		../../include/nlohmann/detail/abi_macros.hpp \
 		../../stucturs.h \
 		../../include/nlohmann/json.hpp \
 		../../include/nlohmann/adl_serializer.hpp \
-		../../include/nlohmann/detail/abi_macros.hpp \
 		../../include/nlohmann/detail/conversions/from_json.hpp \
 		../../include/nlohmann/detail/exceptions.hpp \
 		../../include/nlohmann/detail/value_t.hpp \
@@ -522,7 +523,6 @@ sensormove.o: ../../sensormove.cpp ../../sensormove.h \
 		../../include/nlohmann/detail/iterators/iterator_traits.hpp \
 		../../include/nlohmann/detail/meta/call_std/begin.hpp \
 		../../include/nlohmann/detail/meta/call_std/end.hpp \
-		../../include/nlohmann/json_fwd.hpp \
 		../../include/nlohmann/detail/string_concat.hpp \
 		../../include/nlohmann/detail/meta/identity_tag.hpp \
 		../../include/nlohmann/detail/meta/std_fs.hpp \
@@ -558,9 +558,10 @@ sensormove.o: ../../sensormove.cpp ../../sensormove.h \
 signalpropagation.o: ../../signalpropagation.cpp ../../signalpropagation.h \
 		../../stucturs.h \
 		../../readerjson.h \
+		../../include/nlohmann/json_fwd.hpp \
+		../../include/nlohmann/detail/abi_macros.hpp \
 		../../include/nlohmann/json.hpp \
 		../../include/nlohmann/adl_serializer.hpp \
-		../../include/nlohmann/detail/abi_macros.hpp \
 		../../include/nlohmann/detail/conversions/from_json.hpp \
 		../../include/nlohmann/detail/exceptions.hpp \
 		../../include/nlohmann/detail/value_t.hpp \
@@ -575,7 +576,6 @@ signalpropagation.o: ../../signalpropagation.cpp ../../signalpropagation.h \
 		../../include/nlohmann/detail/iterators/iterator_traits.hpp \
 		../../include/nlohmann/detail/meta/call_std/begin.hpp \
 		../../include/nlohmann/detail/meta/call_std/end.hpp \
-		../../include/nlohmann/json_fwd.hpp \
 		../../include/nlohmann/detail/string_concat.hpp \
 		../../include/nlohmann/detail/meta/identity_tag.hpp \
 		../../include/nlohmann/detail/meta/std_fs.hpp \
