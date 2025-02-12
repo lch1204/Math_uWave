@@ -8,28 +8,8 @@
 
 using namespace std;
 
-SensorMove::SensorMove(const string &config_file) {
-    config.load(config_file);
-    obstacles = config.get_obstacles();
+SensorMove::SensorMove() {
 
-    //инициализация начального местоположения датчиков
-    try {
-        auto positions = config.get<vector<vector<double>>>("sensor.positions");
-        for(const auto& pos : positions) {
-            sensors.emplace_back(Point3D{pos[0], pos[1], pos[2]}, config);
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Ошибка при чтении 'sensor.positions': " << e.what() << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-
-    // Настройка мобильности инициатора
-    if(config.get<bool>("initiator.mobile")) {
-        sensors[0].set_mobility(true);
-        auto vel = config.get<vector<double>>("initiator.velocity");
-        sensors[0].set_velocity({vel[0], vel[1], vel[2]});
-    }
 }
 
 void SensorMove::run_simulation() {
@@ -110,6 +90,41 @@ void SensorMove::runMeasurementCycle() {
         } else {
             std::cout << "No valid paths to sensor " << i << "\n";
         }
+    }
+}
+
+void SensorMove::addPositionAUV(double x, double y, double z)
+{
+    sensors.emplace_back(Point3D{x, y, z}, config);
+}
+
+void SensorMove::addPositionModem(double x, double y, double z)
+{
+    sensors.emplace_back(Point3D{x, y, z}, config);
+}
+
+void SensorMove::readConfig(const string &config_file)
+{
+    config.load(config_file);
+    obstacles = config.get_obstacles();
+
+    //инициализация начального местоположения датчиков
+    try {
+        auto positions = config.get<vector<vector<double>>>("sensor.positions");
+        for(const auto& pos : positions) {
+            sensors.emplace_back(Point3D{pos[0], pos[1], pos[2]}, config);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Ошибка при чтении 'sensor.positions': " << e.what() << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+
+    // Настройка мобильности инициатора
+    if(config.get<bool>("initiator.mobile")) {
+        sensors[0].set_mobility(true);
+        auto vel = config.get<vector<double>>("initiator.velocity");
+        sensors[0].set_velocity({vel[0], vel[1], vel[2]});
     }
 }
 

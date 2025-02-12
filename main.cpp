@@ -2,7 +2,8 @@
 
 int main()
 {
-    SensorMove move("config.json");
+    SensorMove move;
+    move.readConfig("config.json");
     move.run_simulation();
     // move.runMeasurementCycle();
 

@@ -24,10 +24,15 @@ class SensorMove
     vector<RayPath> measurement_results; // Сохраненные результаты измерений
 
 public:
-    SensorMove(const string& config_file);
+    SensorMove();
 
     void run_simulation();
     void runMeasurementCycle();
+
+    void addPositionAUV(double x, double y, double z);
+    void addPositionModem(double x, double y, double z);
+    void readConfig(const string &config_file);
+    void returnXY();
 
     // Проверка потери сигнала
     bool check_signal_loss() const {
