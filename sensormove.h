@@ -27,7 +27,6 @@ public:
     SensorMove();
 
     void run_simulation();
-    void runMeasurementCycle();
 
     void addPositionAUV(double x, double y, double z);
     void addPositionModem(double x, double y, double z);
@@ -35,14 +34,23 @@ public:
     void returnXY();
 
     // Проверка потери сигнала
-    bool check_signal_loss() const {
+    bool check_signal_loss(double procent_loss) const {
         std::mt19937 gen{std::random_device{}()}; // Генератор случайных чисел
         // Получаем вероятность потери сигнала из конфига (по умолчанию 0.1)
-        double loss_probability = config.get<double>("signal_loss_probability");
+        double loss_probability_config = config.get<double>("signal_loss_probability");
 
-        // Генерация случайного события (потеря сигнала)
-        std::bernoulli_distribution dist(loss_probability);
-        return dist(gen); // Возвращает true, если сигнал потерян
+        if (config.get<bool>("signal_loss_probability_flag"))
+        {
+            // Генерация случайного события (потеря сигнала)
+            std::bernoulli_distribution dist(loss_probability_config);
+            return dist(gen); // Возвращает true, если сигнал потерян
+        }
+        else
+        {
+            std::bernoulli_distribution dist(procent_loss);
+            return dist(gen); // Возвращает true, если сигнал потерян
+        }
+
     }
 
     // Запуск таймаута при потере сигнала

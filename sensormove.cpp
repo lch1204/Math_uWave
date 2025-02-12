@@ -42,57 +42,6 @@ void SensorMove::run_simulation() {
     }
 }
 
-void SensorMove::runMeasurementCycle() {
-    // Если в режиме ожидания
-    if(is_waiting) {
-        auto now = std::chrono::steady_clock::now();
-        double elapsed = std::chrono::duration<double>(now - timeout_start).count();
-
-        // Проверяем таймаут из конфига (по умолчанию 6 сек)
-        if(elapsed >= config.get<double>("timeout")) {
-            is_waiting = false;
-            std::cout << "Timeout finished. Resuming operations.\n";
-        } else {
-            std::cout << "Waiting..." << (6.0 - elapsed) << "s left\n";
-            return;
-        }
-    }
-
-    // Проверка потери сигнала (вероятность из конфига)
-    double loss_prob = config.get<double>("signal_loss_probability");
-    std::bernoulli_distribution loss_dist(loss_prob);
-
-    if(loss_dist(gen)) {
-        std::cout << "Signal lost! Starting timeout...\n";
-        is_waiting = true;
-        timeout_start = std::chrono::steady_clock::now();
-        return;
-    }
-
-    // Основная логика работы
-    auto& transmitter = sensors[0];
-    for(size_t i = 1; i < sensors.size(); ++i) {
-        auto& receiver = sensors[i];
-
-        // Расчет путей
-        SignalPropagation propagation(config);
-        propagation.calculate_paths(
-            transmitter.get_position(),
-            receiver.get_position(),
-            obstacles
-            );
-
-        // Выбор пути
-        if(const RayPath* path = propagation.selectPath()) {
-            std::cout << "Selected path to sensor " << i
-                      << " delay: " << path->delay << "s"
-                      << " attenuation: " << path->attenuation << "\n";
-        } else {
-            std::cout << "No valid paths to sensor " << i << "\n";
-        }
-    }
-}
-
 void SensorMove::addPositionAUV(double x, double y, double z)
 {
     sensors.emplace_back(Point3D{x, y, z}, config);
@@ -211,9 +160,14 @@ void SensorMove::run_measurement_cycle() {
             return;
         }
     }
+    Point3D tr =sensors[0].get_position();
+    Point3D rx = sensors[1].get_position();
+    double res = sqrt(pow(tr.x-rx.x,2)+pow(tr.y-rx.y,2)+pow(tr.y-rx.y,2)); //расстояние между двумя маяками ответчиками
 
+    double procent_loss =sqrt(10.01*res-10.01)/100; //параметр
+    qDebug() << "расстояние между маяками" << res<< "процент потерь" << procent_loss*100;
     // Проверка потери сигнала
-    if(check_signal_loss()) {
+    if(check_signal_loss(procent_loss)) {
         start_timeout();
         return;
     }
