@@ -9,7 +9,8 @@
     },
     "sound_speed": 1500.0,
     "signal_loss_probability": 0.05,
-    "measurement_delay": 0.5,
+    "measurement_delay": 0.1,
+    "measurement_delay_flag": false,
     "timeout": 1.0,
     "initiator": {
         "mobile": false,
@@ -26,7 +27,7 @@
         "right_x": 60.0,        
         "front_y": 50.0,        
         "back_y": -50.0,        
-        "bottom_z": -50.0,      
+        "bottom_z": 50.0,      
         "top_z": 0.0,           
         "reflection_loss": 0.8  
     },

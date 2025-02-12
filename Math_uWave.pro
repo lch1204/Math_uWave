@@ -6,7 +6,7 @@ SOURCES += \
         main.cpp \
         readerjson.cpp \
         sensormove.cpp \
-        signalpropagation.cpp
+        signalpropagation.cpp \
 
 HEADERS += \
     readerjson.h \

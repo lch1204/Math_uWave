@@ -33,7 +33,7 @@ void ReaderJson::load(const string &filename) {
 
 vector<Obstacle> ReaderJson::get_obstacles() const {
     vector<Obstacle> obstacles;
-    const double INF = numeric_limits<double>::infinity();
+    const double INF = 1e6; // Замена бесконечности на большое число
 
     // 1. Добавляем дно
     if(config.contains("aquarium")) {
@@ -61,11 +61,11 @@ vector<Obstacle> ReaderJson::get_obstacles() const {
 
     // 3. Стенки акватории (вертикальные по осям X и Y)
     if (walls.enabled) {
-        const auto add_wall = [&](vector<Point3D> vertices, string surface) {
+        const auto add_wall = [&](vector<Point3D> vertices, string surface, string obstacle) {
             obstacles.emplace_back(
                 vertices,
                 surface,
-                "vertical", // Тип препятствия
+                obstacle, // Тип препятствия
                 walls.reflection_loss // Коэффициент отражения
                 );
         };
@@ -73,20 +73,24 @@ vector<Obstacle> ReaderJson::get_obstacles() const {
         // Стенки по оси X (левая и правая)
         add_wall(
             {{walls.left_x, -INF, walls.bottom_z}, {walls.left_x, INF, walls.top_z}}, // Левая стенка
+            "aquarium_wall",
             "left_wall"
             );
         add_wall(
             {{walls.right_x, -INF, walls.bottom_z}, {walls.right_x, INF, walls.top_z}}, // Правая стенка
+            "aquarium_wall",
             "right_wall"
             );
 
         // Стенки по оси Y (передняя и задняя)
         add_wall(
             {{-INF, walls.front_y, walls.bottom_z}, {INF, walls.front_y, walls.top_z}}, // Передняя стенка
+            "aquarium_wall",
             "front_wall"
             );
         add_wall(
             {{-INF, walls.back_y, walls.bottom_z}, {INF, walls.back_y, walls.top_z}}, // Задняя стенка
+            "aquarium_wall",
             "back_wall"
             );
     }

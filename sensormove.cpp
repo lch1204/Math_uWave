@@ -133,13 +133,14 @@ void SensorMove::perform_measurements() {
         const RayPath* selected_path = propagation.selectPath();
 
         // 3. Обработка результатов
+        measurement_results.push_back(*selected_path);
+        auto delays = receiver.receive_signal(
+            transmitter.get_position(),
+            * selected_path
+            );
         if (selected_path) {
             // Сохранение результатов
-            measurement_results.push_back(*selected_path);
-            auto delays = receiver.receive_signal(
-                transmitter.get_position(),
-                * selected_path
-                );
+
             double distance = delays[0] * config.get<double>("sound_speed");
 
             // Логирование
@@ -151,10 +152,20 @@ void SensorMove::perform_measurements() {
         }
 
         // 4. Учет задержки между измерениями (из конфига)
-        double measurement_delay = config.get<double>("measurement_delay");
-        std::this_thread::sleep_for(
-            std::chrono::duration<double>(measurement_delay)
-            );
+        if (config.get<bool>("measurement_delay_flag"))
+        {
+            double measurement_delay = config.get<double>("measurement_delay");
+            std::this_thread::sleep_for(
+                std::chrono::duration<double>(measurement_delay)
+                );
+        }
+        else
+        {
+            qDebug() << "delays[0]" << delays[0];
+            std::this_thread::sleep_for(
+                std::chrono::duration<double>(delays[0]+config.get<double>("measurement_delay"))
+                );
+        }
     }
 }
 

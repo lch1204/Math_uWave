@@ -11,29 +11,20 @@ double SignalPropagation::distance(const Point3D& a, const Point3D& b) const {
 }
 
 // Угловой фактор отражения
-double SignalPropagation::angular_factor(const Point3D& incident, const Obstacle& obs) const {
-    Point3D normal;
-
-    // Определяем нормаль в зависимости от типа поверхности
-    if (obs.surface_type == "water_surface") {
-        normal = {0, 0, -1}; // Нормаль вниз для поверхности воды
-    } else if (obs.surface_type == "silt" || obs.surface_type == "sand") {
-        normal = {0, 0, 1}; // Нормаль вверх для дна
-    } else if (obs.surface_type == "aquarium_wall") {
-        if (obs.vertices[0].x == obs.vertices[1].x) {
-            normal = {1, 0, 0}; // Нормаль для вертикальных стенок по X
-        } else {
-            normal = {0, 1, 0}; // Нормаль для вертикальных стенок по Y
-        }
+double SignalPropagation::angular_factor(const Point3D &incident, const Obstacle &obs) const {
+    if (std::isnan(incident.x)) {
+        qDebug() << "Некорректное направление падения!";
+        return 0.0;
     }
 
-    // Вычисляем косинус угла между направлением сигнала и нормалью
+    Point3D normal ;
+        calculate_surface_normal(obs);
     double dot = incident.x * normal.x + incident.y * normal.y + incident.z * normal.z;
-    double mag = sqrt(incident.x * incident.x + incident.y * incident.y + incident.z * incident.z);
-    qDebug() << "incident.x " << incident.x << "normal.x " << normal.x ;
-    qDebug() << "dot" << dot << "mag" << mag;
-    return std::max(0.0, dot / mag); // Угловой фактор не может быть отрицательным
+    double mag = sqrt(pow(incident.x, 2) + pow(incident.y, 2) + pow(incident.z, 2));
+
+    return std::max(0.0, dot / mag);
 }
+
 
 // Основной метод для расчета путей сигнала
 void SignalPropagation::calculate_paths(const Point3D& tx, const Point3D& rx, const vector<Obstacle>& obstacles) {
@@ -63,43 +54,34 @@ void SignalPropagation::calculate_paths(const Point3D& tx, const Point3D& rx, co
 
     // Рассчитываем отраженные пути
     for (const auto& obs : obstacles) {
-        static int i = 0;
-        qDebug() << "i++"<< i++;
         // Находим точку отражения
         Point3D reflection_point = calculate_reflection_point(tx, rx, obs);
-        qDebug() <<"fff";
 
         // Проверяем, есть ли LOS от передатчика до точки отражения и от точки отражения до приемника
         bool has_los_to_reflection = true;
-        bool has_los_from_reflection = true;
 
+        // В цикле проверки LOS:
         for (const auto& other_obs : obstacles) {
-            if (line_intersects_obstacle(tx, reflection_point, other_obs)) {
+            // Пропускаем текущее препятствие (отражение от него уже учтено)
+            if (&other_obs == &obs) continue;
+
+            // Проверка валидности reflection_point
+            if (std::isnan(reflection_point.x)) {
                 has_los_to_reflection = false;
-                break;
-            }
-            if (line_intersects_obstacle(reflection_point, rx, other_obs)) {
-                has_los_from_reflection = false;
                 break;
             }
         }
 
-        std::cout <<" has_los_to_reflection = "<< has_los_to_reflection << std::endl;
-        std::cout <<" has_los_from_reflection = "<< has_los_from_reflection << std::endl;
-
         // Если путь свободен, добавляем отраженный путь
-        if (has_los_to_reflection && has_los_from_reflection) {
+        if (has_los_to_reflection) {
             double distance_to_reflection = distance(tx, reflection_point);
             double distance_from_reflection = distance(reflection_point, rx);
-            double total_distance = distance_to_reflection + distance_from_reflection;
-
+            double total_distance =distance_to_reflection+distance_from_reflection;
+            Point3D norm = calculate_surface_normal(obs);
             // Угловой фактор и затухание
-            qDebug() << "reflection_point.x" << reflection_point.x << "reflection_point.y" << reflection_point.y << "reflection_point.z " << reflection_point.z ;
-            Point3D incident_dir = {reflection_point.x - tx.x, reflection_point.y - tx.y, reflection_point.z - tx.z};
-            double angle_factor = angular_factor(incident_dir, obs);
+            double angle_factor = calculate_angle_cosine(tx, reflection_point, norm);
             qDebug() << "angle_factor" << angle_factor;
-            double attenuation = pow(obs.reflection_loss, 1) * angle_factor;
-            // double attenuation = 0.5;
+            double attenuation = abs(pow(obs.reflection_loss, 1) * angle_factor);
 
             // Добавляем путь в список
             multipaths.push_back({
@@ -115,32 +97,71 @@ void SignalPropagation::calculate_paths(const Point3D& tx, const Point3D& rx, co
 
 // Вычисление точки отражения
 Point3D SignalPropagation::calculate_reflection_point(const Point3D& tx, const Point3D& rx, const Obstacle& obs) {
-    // Для горизонтальных поверхностей (дно, поверхность воды)
-    qDebug() << "тык";
-    if (obs.surface_type == "water_surface" || obs.surface_type == "silt" || obs.surface_type == "sand") {
-        double surface_z = obs.vertices[0].z;
-        double rx_dist = rx.z - surface_z;
-        qDebug() << "rx.x" << rx.x << "rx.y" << rx.y << "surface_z - rx_dist"  << surface_z - rx_dist;
-        return {rx.x, rx.y, surface_z - rx_dist}; // Зеркальное отражение
+    // Проверка на валидность вершин препятствия
+    if (obs.vertices.empty()) {
+        qDebug() << "Obstacle has no vertices!";
+        return {NAN, NAN, NAN};
     }
 
-    // Для вертикальных стенок
-    Point3D normal = calculate_surface_normal(obs);
-    Point3D intersection = {obs.vertices[0].x, obs.vertices[0].y, obs.vertices[0].z}; // Упрощенное пересечение
-    qDebug() << "obs.vertices[0].x" << obs.vertices[0].x << "obs.vertices[0].y" << obs.vertices[0].y << "obs.vertices[0].z" << obs.vertices[0].z;
-    return reflect_point(rx, intersection, normal); // Отражение точки
+    // Для горизонтальных поверхностей (дно, поверхность воды)
+    if (obs.surface_type == "water_surface" || obs.surface_type == "silt" || obs.surface_type == "sand")
+    {
+        return calculate_reflection_point_horizontal(tx,rx,obs.vertices[0].z);
+    }
+
+    // Для вертикальных стенок акватории
+    if (obs.surface_type == "aquarium_wall") {
+        // // Убедимся, что препятствие имеет корректный тип
+        if (obs.obstacle_type.empty()) {
+            qDebug() << "Unknown obstacle type!";
+            return {NAN, NAN, NAN};
+        }
+        return calculate_reflection_point_vertical(tx, rx, obs);
+    }
+
+    // Если тип препятствия неизвестен
+    qDebug() << "Unknown surface type!";
+    return {NAN, NAN, NAN};
 }
 
 // Проверка пересечения линии с препятствием
 bool SignalPropagation::line_intersects_obstacle(const Point3D& p1, const Point3D& p2, const Obstacle& obs) {
-    // Упрощенная проверка для горизонтальных и вертикальных поверхностей
-    if (obs.surface_type == "water_surface" || obs.surface_type == "silt" || obs.surface_type == "sand") {
-        return (p1.z > obs.vertices[0].z && p2.z < obs.vertices[0].z) ||
-               (p1.z < obs.vertices[0].z && p2.z > obs.vertices[0].z);
-    } else if (obs.surface_type == "aquarium_wall") {
-        return (p1.x > obs.vertices[0].x && p2.x < obs.vertices[0].x) ||
-               (p1.x < obs.vertices[0].x && p2.x > obs.vertices[0].x);
+    // Если точки невалидны, пересечения нет
+    if (std::isnan(p1.x)) return false;
+
+    // Для горизонтальных поверхностей
+    if (obs.surface_type == "water_surface" || obs.surface_type == "silt") {
+        double surface_z = obs.vertices[0].z;
+        return (p1.z - surface_z) * (p2.z - surface_z) < 0;
     }
+
+    // Для вертикальных стенок
+    if (obs.surface_type == "aquarium_wall") {
+        // Определяем границы стены
+        double wall_min, wall_max, axis_val;
+        if (obs.obstacle_type == "left_wall" || obs.obstacle_type == "right_wall") {
+            wall_min = std::min(obs.vertices[0].y, obs.vertices[1].y);
+            wall_max = std::max(obs.vertices[0].y, obs.vertices[1].y);
+            axis_val = obs.vertices[0].x;
+            // Проверка пересечения по X
+            if ((p1.x - axis_val) * (p2.x - axis_val) >= 0) return false;
+            // Расчет точки пересечения
+            double t = (axis_val - p1.x) / (p2.x - p1.x);
+            double y_intersect = p1.y + t * (p2.y - p1.y);
+            return (y_intersect >= wall_min && y_intersect <= wall_max);
+        } else if (obs.obstacle_type == "front_wall" || obs.obstacle_type == "back_wall") {
+            wall_min = std::min(obs.vertices[0].x, obs.vertices[1].x);
+            wall_max = std::max(obs.vertices[0].x, obs.vertices[1].x);
+            axis_val = obs.vertices[0].y;
+            // Проверка пересечения по Y
+            if ((p1.y - axis_val) * (p2.y - axis_val) >= 0) return false;
+            // Расчет точки пересечения
+            double t = (axis_val - p1.y) / (p2.y - p1.y);
+            double x_intersect = p1.x + t * (p2.x - p1.x);
+            return (x_intersect >= wall_min && x_intersect <= wall_max);
+        }
+    }
+
     return false;
 }
 
@@ -148,6 +169,7 @@ bool SignalPropagation::line_intersects_obstacle(const Point3D& p1, const Point3
 Point3D SignalPropagation::reflect_point(const Point3D& point, const Point3D& surface_point, const Point3D& normal) {
     Point3D v = point - surface_point;
     double d = 2 * (v.x * normal.x + v.y * normal.y + v.z * normal.z);
+    qDebug() << "reflect_point -"<< "point.x - d * normal.x" << point.x - d * normal.x;
     return {
         point.x - d * normal.x,
         point.y - d * normal.y,
@@ -155,14 +177,146 @@ Point3D SignalPropagation::reflect_point(const Point3D& point, const Point3D& su
     };
 }
 
-// Вычисление нормали к поверхности
-Point3D SignalPropagation::calculate_surface_normal(const Obstacle& obs) {
-    if (obs.surface_type == "water_surface" || obs.surface_type == "silt" || obs.surface_type == "sand") {
-        return {0, 0, 1}; // Нормаль вверх для горизонтальных поверхностей
-    } else if (obs.surface_type == "aquarium_wall") {
-        return {1, 0, 0}; // Нормаль для вертикальных стенок
+Point3D SignalPropagation::calculate_reflection_point_horizontal(const Point3D &tx, const Point3D &rx, double surface_z)
+{
+    // 1. Зеркально отражаем приемник относительно поверхности
+    Point3D mirrored_rx = rx;
+    mirrored_rx.z = 2 * surface_z - rx.z;
+
+    // 2. Находим параметр t пересечения луча tx -> mirrored_rx с поверхностью z=surface_z
+    double dz = mirrored_rx.z - tx.z;
+
+    // Если луч параллелен поверхности (dz == 0), отражение невозможно
+    if (std::abs(dz) < 1e-6) {
+        return {NAN, NAN, NAN};
     }
-    return {0, 0, 1}; // По умолчанию
+
+    double t = (surface_z - tx.z) / dz;
+
+    // 3. Вычисляем координаты точки пересечения
+    double x = tx.x + t * (mirrored_rx.x - tx.x);
+    double y = tx.y + t * (mirrored_rx.y - tx.y);
+    double z = surface_z;
+    qDebug() <<"point_horizontal x" << x <<"y" <<y <<"z"<< z;
+
+    return {x, y, z};
+}
+
+double SignalPropagation::calculate_angle_cosine(const Point3D &tx, const Point3D &point_reflection, const Point3D &surface_normal)
+{
+    // 1. Вычисляем вектор направления от tx к точке отражения
+    Point3D dir = {
+        point_reflection.x - tx.x,
+        point_reflection.y - tx.y,
+        point_reflection.z - tx.z
+    };
+
+    // 2. Вычисляем длину вектора
+    double length = sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
+    qDebug() << "length" << length;
+
+    // Если точки совпадают или вектор нулевой, возвращаем NaN
+    if (length < 1e-6) {
+        return NAN;
+    }
+
+    // 3. Нормализуем вектор
+    dir.x = dir.x / length;
+    dir.y = dir.y / length;
+    dir.z = dir.z / length;
+
+    // 4. Нормализуем нормаль к поверхности
+    double normal_length = sqrt(surface_normal.x * surface_normal.x +
+                                surface_normal.y * surface_normal.y +
+                                surface_normal.z * surface_normal.z);
+    Point3D normal = {
+        surface_normal.x / normal_length,
+        surface_normal.y / normal_length,
+        surface_normal.z / normal_length
+    };
+
+    // 5. Вычисляем косинус угла между направлением и нормалью
+    double cosine = dir.x * normal.x + dir.y * normal.y + dir.z * normal.z;
+    cosine = sqrt(1 - pow(cosine,2));
+    if (dir.z<0) cosine = -cosine;
+
+    return cosine;
+}
+
+Point3D SignalPropagation::calculate_reflection_point_vertical(const Point3D &tx, const Point3D &rx, const Obstacle &obs)
+{
+    // 1. Определяем параметры стены
+    double wall_pos;
+    char reflection_axis; // 'x' или 'y'
+    bool is_positive_side;
+
+    if (obs.obstacle_type == "left_wall" || obs.obstacle_type == "right_wall") {
+        wall_pos = obs.vertices[0].x;
+        reflection_axis = 'x';
+        is_positive_side = (obs.obstacle_type == "right_wall");
+    }
+    else if (obs.obstacle_type == "front_wall" || obs.obstacle_type == "back_wall") {
+        wall_pos = obs.vertices[0].y;
+        reflection_axis = 'y';
+        is_positive_side = (obs.obstacle_type == "front_wall");
+    }
+    else {
+        return {NAN, NAN, NAN};
+    }
+
+    // 2. Зеркальное отражение приемника
+    Point3D mirrored_rx = rx;
+    if (reflection_axis == 'x') {
+        mirrored_rx.x = 2 * wall_pos - rx.x;
+    } else {
+        mirrored_rx.y = 2 * wall_pos - rx.y;
+    }
+
+    // 3. Находим параметр t пересечения луча tx -> mirrored_rx со стеной
+    double delta;
+    if (reflection_axis == 'x') {
+        delta = mirrored_rx.x - tx.x;
+        if (fabs(delta) < 1e-6) return {NAN, NAN, NAN};
+        double t = (wall_pos - tx.x) / delta;
+        if (t < 0 || t > 1) return {NAN, NAN, NAN};
+        qDebug() <<"XВычисляем координаты точки пересечения x"<< wall_pos <<"y" << tx.y + t * (mirrored_rx.y - tx.y) << "z" << tx.z + t * (mirrored_rx.z - tx.z);
+        // 4. Вычисляем координаты точки пересечения
+        return {
+            wall_pos,
+            tx.y + t * (mirrored_rx.y - tx.y),
+            tx.z + t * (mirrored_rx.z - tx.z)
+        };
+    }
+    else {
+        delta = mirrored_rx.y - tx.y;
+        if (fabs(delta) < 1e-6) return {NAN, NAN, NAN};
+        double t = (wall_pos - tx.y) / delta;
+        if (t < 0 || t > 1) return {NAN, NAN, NAN};
+        qDebug() <<"Y Вычисляем координаты точки пересечения x"<< tx.x + t * (mirrored_rx.x - tx.x)
+                 <<"y" << wall_pos << "z" << tx.z + t * (mirrored_rx.z - tx.z);
+        return {
+            tx.x + t * (mirrored_rx.x - tx.x),
+            wall_pos,
+            tx.z + t * (mirrored_rx.z - tx.z)
+        };
+    }
+}
+
+// Вычисление нормали к поверхности
+Point3D SignalPropagation::calculate_surface_normal(const Obstacle &obs) const {
+    if (obs.surface_type == "aquarium_wall") {
+        if (obs.obstacle_type == "left_wall") {
+            return {1, 0, 0}; // Нормаль вправо для левой стенки
+        } else if (obs.obstacle_type == "right_wall") {
+            return {-1, 0, 0}; // Нормаль влево для правой стенки
+        } else if (obs.obstacle_type == "front_wall") {
+            return {0, -1, 0}; // Нормаль назад для передней стенки
+        } else if (obs.obstacle_type == "back_wall") {
+            return {0, 1, 0}; // Нормаль вперед для задней стенки
+        }
+    }
+    // Для горизонтальных поверхностей
+    return {0, 0, 1};
 }
 
 const RayPath *SignalPropagation::selectPath() const {
