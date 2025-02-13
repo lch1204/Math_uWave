@@ -32,8 +32,8 @@ public:
         vector<double> delays;
 
         // Добавляем шум к задержке выбранного пути
-        double delay = selected_path.delay + noise_dist(gen);
-        delays.push_back(delay);
+        double distance = selected_path.delay*config.get<double>("sound_speed") + noise_dist(gen);
+        delays.push_back(distance);
 
         return delays;
     }

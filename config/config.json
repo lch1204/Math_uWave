@@ -1,11 +1,11 @@
 {
     "sensor": {
         "positions": [
-            [0.0, 0.0, 20.0],
-            [20.0, 20.0, 20.0]
+            [0.1, 0.1, 1.0],
+            [1.05, 0.1, 1.0]
         ],
-        "noise_mean": 0.0,
-        "noise_stddev": 0.001
+        "noise_mean": 0.3,
+        "noise_stddev": 0.5
     },
     "sound_speed": 1500.0,
     "signal_loss_probability": 0.05,
@@ -14,7 +14,7 @@
     "measurement_delay_flag": false,
     "timeout": 1.0,
     "initiator": {
-        "mobile": true,
+        "mobile": false,
         "velocity": [1.5, 0.0, 0.0]
     },
     "simulation": {
@@ -24,11 +24,11 @@
     },
     "aquarium_walls": {
         "enabled": true,
-        "left_x": -60.0,        
-        "right_x": 60.0,        
+        "left_x": 50.0,        
+        "right_x": 0.0,        
         "front_y": 50.0,        
-        "back_y": -50.0,        
-        "bottom_z": 50.0,      
+        "back_y": 0.0,        
+        "bottom_z": 3.0,      
         "top_z": 0.0,           
         "reflection_loss": 0.8  
     },

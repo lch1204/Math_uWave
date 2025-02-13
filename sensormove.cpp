@@ -13,8 +13,8 @@ SensorMove::SensorMove() {
 }
 
 void SensorMove::run_simulation() {
-    double time_step = config.get<double>("simulation.time_step");
-    double duration = config.get<double>("simulation.duration");
+    double time_step = config.get<double>("simulation.time_step"); //шаг времени симуляции
+    double duration = config.get<double>("simulation.duration"); //время симуляции
     bool real_time = config.get<bool>("simulation.real_time_mode");
 
 
@@ -105,7 +105,7 @@ void SensorMove::perform_measurements() {
         if (selected_path) {
             // Сохранение результатов
 
-            double distance = delays[0] * config.get<double>("sound_speed");
+            double distance = delays[0] ;
 
             // Логирование
             qDebug() << "Measurement to sensor" << i
@@ -125,9 +125,9 @@ void SensorMove::perform_measurements() {
         }
         else
         {
-            qDebug() << "delays[0]" << delays[0];
+            qDebug() << "delays[0]" << delays[0]/config.get<double>("sound_speed");
             std::this_thread::sleep_for(
-                std::chrono::duration<double>(delays[0]+config.get<double>("measurement_delay"))
+                std::chrono::duration<double>(delays[0]/config.get<double>("sound_speed")+config.get<double>("measurement_delay"))
                 );
         }
     }
@@ -162,7 +162,7 @@ void SensorMove::run_measurement_cycle() {
     }
     Point3D tr =sensors[0].get_position();
     Point3D rx = sensors[1].get_position();
-    double res = sqrt(pow(tr.x-rx.x,2)+pow(tr.y-rx.y,2)+pow(tr.y-rx.y,2)); //расстояние между двумя маяками ответчиками
+    double res = sqrt(pow(tr.x-rx.x,2)+pow(tr.y-rx.y,2)+pow(tr.z-rx.z,2)); //расстояние между двумя маяками ответчиками
 
     double procent_loss =sqrt(10.01*res-10.01)/100; //параметр
     qDebug() << "расстояние между маяками" << res<< "процент потерь" << procent_loss*100;

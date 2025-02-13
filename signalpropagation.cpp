@@ -80,7 +80,7 @@ void SignalPropagation::calculate_paths(const Point3D& tx, const Point3D& rx, co
             Point3D norm = calculate_surface_normal(obs);
             // Угловой фактор и затухание
             double angle_factor = calculate_angle_cosine(tx, reflection_point, norm);
-            qDebug() << "angle_factor" << angle_factor;
+            // qDebug() << "angle_factor" << angle_factor;
             double attenuation = abs(pow(obs.reflection_loss, 1) * angle_factor);
 
             // Добавляем путь в список
@@ -90,7 +90,7 @@ void SignalPropagation::calculate_paths(const Point3D& tx, const Point3D& rx, co
                 total_distance / config.get<double>("sound_speed"), // Задержка
                 attenuation                 // Вес
             });
-            qDebug() << "multipaths.push_back attenuation" << attenuation;
+            // qDebug() << "multipaths.push_back attenuation" << attenuation;
         }
     }
 }
