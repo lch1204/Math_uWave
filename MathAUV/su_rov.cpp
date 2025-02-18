@@ -8,6 +8,7 @@
 SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
 {
     double dt = 0.01;
+    first_measurement_ = true; // Инициализация флага
 
 
     sen_uWave = new SensorMove();
@@ -17,13 +18,6 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
 
     senIMU = new IMUSensor(dt);
     senPressure = new PressureSensor();
-
-
-
-
-    // Eigen::Vector3d beacon_pos;
-
-    // navSystem = new NavigationSystem(*move_uWave, beacon_pos);
 
     Upl = Upp = Usl = Usp = Uzl = Uzp = 0;
 
@@ -66,6 +60,32 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     Td = 0.15; //постоянная времени движителей
     depth_limit=50;
     max_depth=50;
+
+    // Инициализация EKF
+    state_.resize(6);
+    state_.setZero(); // Начальное состояние: [x=0, y=0, z=0, vx=0, vy=0, vz=0]
+
+    covariance_ = Eigen::MatrixXd::Identity(6, 6) * 10.0; // Начальная неопределенность
+
+    F_.resize(6, 6);
+    F_ << 1, 0, 0, dt, 0, 0,
+        0, 1, 0, 0, dt, 0,
+        0, 0, 1, 0, 0, dt,
+        0, 0, 0, 1, 0, 0,
+        0, 0, 0, 0, 1, 0,
+        0, 0, 0, 0, 0, 1;
+
+    H_.resize(1, 6);
+    H_ << 0, 0, 0, 0, 0, 0; // Обновится в correction()
+
+    covariance_ = Eigen::MatrixXd::Identity(6, 6) * 100.0; // Увеличьте начальную неопределенность
+
+    // В конструкторе SU_ROV:
+    Q_ = Eigen::MatrixXd::Identity(6, 6) * 0.01;  // Шум процесса (меньше = больше доверия модели)
+    R_ = Eigen::MatrixXd::Identity(1, 1) * 0.5;   // Шум измерений (меньше = больше доверия датчику)
+
+    beacon_position_ << 10.0, 10.0, 10.0; // Пример координат маяка
+    last_update_time_ = 0.0;
 }
 
     void SU_ROV::model(const float Upl,const float Upp,const float Usl,const float Usp, const float Uzl, const float Uzp) {
@@ -237,16 +257,6 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     da[21] = a[1];
     da[22] = a[2];
     da[23] = a[3];
-
-    // Psi_g = 45;
-    // a[6] = 0.75;
-    // a[5] = 0.75;
-    // a[4] = 0.75;
-
-    // a[15] = 45; // x_global
-    // a[16] = 45; // y_global
-    // a[17] = 45; // z_global
-
 }
 
 void SU_ROV::resetModel(){
@@ -270,6 +280,37 @@ void SU_ROV::tick(const float Ttimer){
     Eigen::Vector3d true_linear_vel(vx_local, vy_local, vz_local);
     senIMU->update(Gamma_g, Tetta_g,Psi_g,true_angular_rates,true_linear_vel);
     senPressure->update(z_global,Ttimer);
+
+    // Получение данных с датчиков
+    IMUOutput imu_data = senIMU->getOutput();
+    double depth = senPressure->getOutput();
+    double distance = sen_uWave->getOutput();
+    state_(2) = depth; // Обновляем глубину в EKF
+    X[500][0] = distance;
+
+    // Прогнозирование состояния каждые 0.01 сек
+    prediction(Ttimer);
+
+    // Коррекция при наличии новых данных от модема
+    if (distance > 0) {
+        correction(distance);
+        // В методе tick()
+        qDebug() << "EKF corrected. State: "
+                 << state_(0) << ", "
+                 << state_(1) << ", "
+                 << state_(2) << ", "
+                 << "Vx:" << state_(3)
+                 << "Vy:" << state_(4)
+                 << "Vz:" << state_(5);
+    }
+
+    // Обновляем только EKF-координаты
+    ekf_x = state_(0);
+    ekf_y = state_(1);
+    ekf_z = state_(2);
+    X[141][0] = ekf_x;
+    X[142][0] = ekf_y;
+    X[143][0] = ekf_z;
 }
 void SU_ROV::integrate(double &input, double &output, double &prevOutput, double dt) {
     output = prevOutput + dt*input;

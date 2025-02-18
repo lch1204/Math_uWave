@@ -149,13 +149,13 @@ void SensorMove::perform_measurements(double dt) {
             sensors[i].dist = distance;
 
             // Логирование
-            qDebug() << "Measurement to sensor" << i
+            if (commentFlag) qDebug() << "Measurement to sensor" << i
                      << "| Delay:" << distance
                      << "s | weight:" << selected_path->weight;
             delayAfterMeasurement = true;
             updateData= true;
         } else {
-            qDebug() << "No valid path to sensor" << i;
+            if (commentFlag) qDebug() << "No valid path to sensor" << i;
             delayAfterMeasurement = true;
         }
 
@@ -198,21 +198,21 @@ void SensorMove::run_measurement_cycle(double dt) {
         double elapsed = std::chrono::duration<double>(now - timeout_start).count();
         if(elapsed >= config.get<double>("timeout")) {
             is_waiting = false;
-            qDebug() << "Timeout finished. Resuming operations.";
+            if (commentFlag) qDebug() << "Timeout finished. Resuming operations.";
         } else {
-            qDebug() << "Waiting..." << (config.get<double>("timeout") - elapsed) << "s left";
+            if (commentFlag) qDebug() << "Waiting..." << (config.get<double>("timeout") - elapsed) << "s left";
             return;
         }
     }
     Point3D tr = sensors[0].get_position();
     Point3D rx = sensors[1].get_position();
-    qDebug() << "tr.x-" << tr.x<< "rx.x-"<< rx.x;
-    qDebug() << "tr.y-" << tr.y<< "rx.y-"<< rx.y;
-    qDebug() << "tr.z-" << tr.z<< "rx.z-"<< rx.z;
+    if (commentFlag) qDebug() << "tr.x-" << tr.x<< "rx.x-"<< rx.x;
+    if (commentFlag) qDebug() << "tr.y-" << tr.y<< "rx.y-"<< rx.y;
+    if (commentFlag) qDebug() << "tr.z-" << tr.z<< "rx.z-"<< rx.z;
     double res = sqrt(pow(tr.x-rx.x,2)+pow(tr.y-rx.y,2)+pow(tr.z-rx.z,2)); //расстояние между двумя маяками ответчиками
 
     double procent_loss =sqrt(10.01*res-10.01)/100; //параметр
-    qDebug() << "расстояние между маяками" << res<< "процент потерь" << procent_loss*100;
+    if (commentFlag) qDebug() << "расстояние между маяками" << res<< "процент потерь" << procent_loss*100;
     // Проверка потери сигнала
     if(check_signal_loss(procent_loss)) {
         start_timeout();

@@ -15,6 +15,7 @@ public:
     // Основной метод для расчета путей сигнала
     void calculate_paths(const Point3D& tx, const Point3D& rx, const vector<Obstacle>& obstacles);
 
+    bool commentFlag = false;
     // Возвращает список путей
     const vector<RayPath>& get_paths() const { return multipaths; }
     const RayPath* selectPath() const; // Выбор пути на основе весов

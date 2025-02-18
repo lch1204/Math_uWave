@@ -13,7 +13,7 @@ double SignalPropagation::distance(const Point3D& a, const Point3D& b) const {
 // Угловой фактор отражения
 double SignalPropagation::angular_factor(const Point3D &incident, const Obstacle &obs) const {
     if (std::isnan(incident.x)) {
-        qDebug() << "Некорректное направление падения!";
+        if (commentFlag) qDebug() << "Некорректное направление падения!";
         return 0.0;
     }
 
@@ -113,14 +113,14 @@ Point3D SignalPropagation::calculate_reflection_point(const Point3D& tx, const P
     if (obs.surface_type == "aquarium_wall") {
         // // Убедимся, что препятствие имеет корректный тип
         if (obs.obstacle_type.empty()) {
-            qDebug() << "Unknown obstacle type!";
+            if (commentFlag) qDebug() << "Unknown obstacle type!";
             return {NAN, NAN, NAN};
         }
         return calculate_reflection_point_vertical(tx, rx, obs);
     }
 
     // Если тип препятствия неизвестен
-    qDebug() << "Unknown surface type!";
+    if (commentFlag) qDebug() << "Unknown surface type!";
     return {NAN, NAN, NAN};
 }
 
@@ -169,7 +169,7 @@ bool SignalPropagation::line_intersects_obstacle(const Point3D& p1, const Point3
 Point3D SignalPropagation::reflect_point(const Point3D& point, const Point3D& surface_point, const Point3D& normal) {
     Point3D v = point - surface_point;
     double d = 2 * (v.x * normal.x + v.y * normal.y + v.z * normal.z);
-    qDebug() << "reflect_point -"<< "point.x - d * normal.x" << point.x - d * normal.x;
+    if (commentFlag) qDebug() << "reflect_point -"<< "point.x - d * normal.x" << point.x - d * normal.x;
     return {
         point.x - d * normal.x,
         point.y - d * normal.y,
@@ -197,7 +197,7 @@ Point3D SignalPropagation::calculate_reflection_point_horizontal(const Point3D &
     double x = tx.x + t * (mirrored_rx.x - tx.x);
     double y = tx.y + t * (mirrored_rx.y - tx.y);
     double z = surface_z;
-    qDebug() <<"point_horizontal x" << x <<"y" <<y <<"z"<< z;
+    if (commentFlag) qDebug() <<"point_horizontal x" << x <<"y" <<y <<"z"<< z;
 
     return {x, y, z};
 }
@@ -213,7 +213,7 @@ double SignalPropagation::calculate_angle_cosine(const Point3D &tx, const Point3
 
     // 2. Вычисляем длину вектора
     double length = sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
-    qDebug() << "length" << length;
+    if (commentFlag) qDebug() << "length" << length;
 
     // Если точки совпадают или вектор нулевой, возвращаем NaN
     if (length < 1e-6) {
@@ -279,7 +279,7 @@ Point3D SignalPropagation::calculate_reflection_point_vertical(const Point3D &tx
         if (fabs(delta) < 1e-6) return {NAN, NAN, NAN};
         double t = (wall_pos - tx.x) / delta;
         if (t < 0 || t > 1) return {NAN, NAN, NAN};
-        qDebug() <<"XВычисляем координаты точки пересечения x"<< wall_pos <<"y" << tx.y + t * (mirrored_rx.y - tx.y) << "z" << tx.z + t * (mirrored_rx.z - tx.z);
+        if (commentFlag) qDebug() <<"XВычисляем координаты точки пересечения x"<< wall_pos <<"y" << tx.y + t * (mirrored_rx.y - tx.y) << "z" << tx.z + t * (mirrored_rx.z - tx.z);
         // 4. Вычисляем координаты точки пересечения
         return {
             wall_pos,
@@ -292,7 +292,7 @@ Point3D SignalPropagation::calculate_reflection_point_vertical(const Point3D &tx
         if (fabs(delta) < 1e-6) return {NAN, NAN, NAN};
         double t = (wall_pos - tx.y) / delta;
         if (t < 0 || t > 1) return {NAN, NAN, NAN};
-        qDebug() <<"Y Вычисляем координаты точки пересечения x"<< tx.x + t * (mirrored_rx.x - tx.x)
+        if (commentFlag) qDebug() <<"Y Вычисляем координаты точки пересечения x"<< tx.x + t * (mirrored_rx.x - tx.x)
                  <<"y" << wall_pos << "z" << tx.z + t * (mirrored_rx.z - tx.z);
         return {
             tx.x + t * (mirrored_rx.x - tx.x),
@@ -321,12 +321,12 @@ Point3D SignalPropagation::calculate_surface_normal(const Obstacle &obs) const {
 
 const RayPath *SignalPropagation::selectPath() const {
     if(multipaths.empty()) return nullptr;
-    qDebug() << "multipaths.size()"<< multipaths.size();
+    if (commentFlag) qDebug() << "multipaths.size()"<< multipaths.size();
 
     // Суммируем все веса
     double total_weight = 0.0;
     for(const auto& path : multipaths) {
-        qDebug() << "weight" << path.weight;
+        if (commentFlag) qDebug() << "weight" << path.weight;
         total_weight += path.weight;
     }
 

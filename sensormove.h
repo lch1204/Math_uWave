@@ -120,6 +120,7 @@ public:
     }
 
     bool updateData = false;
+    bool commentFlag = false;
 
     double getOutput()
     {
