@@ -119,6 +119,21 @@ public:
         return elapsed.count();
     }
 
+    bool updateData = false;
+
+    double getOutput()
+    {
+        if (updateData)
+        {
+            updateData = false;
+            return lastDistance;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
 private:
     void process_delays(const vector<double>& delays, size_t sensor_id);
     void run_measurement_cycle(double dt);

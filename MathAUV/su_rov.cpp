@@ -7,10 +7,17 @@
 
 SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
 {
+    double dt = 0.01;
+
+
     sen_uWave = new SensorMove();
     sen_uWave->readConfig("config.json");
     sen_uWave->addPositionAUV(0,0,10);
     sen_uWave->addPositionModem(10,10,10);
+
+    senIMU = new IMUSensor(dt);
+    senPressure = new PressureSensor();
+
 
 
 
@@ -24,9 +31,9 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     K_protocol = new Qkx_coeffs("kx_pult.conf","k");
 
     X[1][0]=32;
-    connect(&timer, &QTimer::timeout,[this](){
+    connect(&timer, &QTimer::timeout,[this, dt](){
         X[2][0]=K[32];
-        this->tick(0.01);
+        this->tick(dt);
     });
     resetModel();
     timer.start(100);
@@ -231,6 +238,15 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     da[22] = a[2];
     da[23] = a[3];
 
+    // Psi_g = 45;
+    // a[6] = 0.75;
+    // a[5] = 0.75;
+    // a[4] = 0.75;
+
+    // a[15] = 45; // x_global
+    // a[16] = 45; // y_global
+    // a[17] = 45; // z_global
+
 }
 
 void SU_ROV::resetModel(){
@@ -247,9 +263,13 @@ void SU_ROV::tick(const float Ttimer){
     // setTargetPoint(1,1);
     // moveToPoint(Ttimer);
     double usilenie = 50000;
-    BFS_DRK(1,0,0,1*usilenie,0,0);
+    BFS_DRK(10,0,0,1*usilenie,0,0);
     runge(X[50][0], X[60][0], X[70][0], X[80][0], X[90][0], X[100][0],Ttimer,Ttimer);
     sen_uWave->run_simulation_with_MathAUV(x_global, y_global, z_global, Ttimer);
+    Eigen::Vector3d true_angular_rates(Wx, Wy, Wz);
+    Eigen::Vector3d true_linear_vel(vx_local, vy_local, vz_local);
+    senIMU->update(Gamma_g, Tetta_g,Psi_g,true_angular_rates,true_linear_vel);
+    senPressure->update(z_global,Ttimer);
 }
 void SU_ROV::integrate(double &input, double &output, double &prevOutput, double dt) {
     output = prevOutput + dt*input;

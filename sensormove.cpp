@@ -153,6 +153,7 @@ void SensorMove::perform_measurements(double dt) {
                      << "| Delay:" << distance
                      << "s | weight:" << selected_path->weight;
             delayAfterMeasurement = true;
+            updateData= true;
         } else {
             qDebug() << "No valid path to sensor" << i;
             delayAfterMeasurement = true;
