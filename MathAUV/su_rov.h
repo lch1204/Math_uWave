@@ -8,6 +8,8 @@
 #include <QTimer>
 #include "../Navigation/NavigationSystem.h"
 #include "sensormove.h"
+#include "SensorIMU.h"
+#include "SensorPressure.h"
 
 
 #define ANPA_MOD_CNT 24
@@ -107,46 +109,6 @@ public:
     void integrate(double &input, double &output, double &prevOutput, double dt);
     void updateNavigation(double dt);
 
-    /**
-     * @brief Установка целевой глубины для режимов движения
-     * @param depth Целевая глубина (метры)
-     */
-    void setTargetDepth(double depth);
-
-    /**
-     * @brief Установка целевой точки для движения
-     * @param x Глобальная координата X
-     * @param y Глобальная координата Y
-     */
-    void setTargetPoint(double x, double y);
-
-    /**
-     * @brief Установка параметров движения по окружности
-     * @param radius Радиус окружности (метры)
-     * @param centerX Глобальная X-координата центра
-     * @param centerY Глобальная Y-координата центра
-     */
-    void setCircleParams(double radius, double centerX, double centerY);
-
-    /**
-     * @brief Режим движения к целевой точке с заданной глубиной
-     * @param dt Шаг времени (секунды)
-     */
-    void moveToPoint(double dt);
-
-    /**
-     * @brief Режим движения по окружности
-     * @param dt Шаг времени (секунды)
-     */
-    void followCircle(double dt);
-
-    /**
-     * @brief Режим орбитального движения вокруг точки
-     * @param dt Шаг времени (секунды)
-     */
-    void orbitPoint(double dt);
-
-
 protected:
     Qkx_coeffs * K_protocol=nullptr;
     x_protocol * X_protocol=nullptr;
@@ -159,25 +121,10 @@ protected:
     double m_circleCenterX = 0.0;    ///< X-центр окружности
     double m_circleCenterY = 0.0;    ///< Y-центр окружности
 
-    /**
-     * @brief ПИД-регулятор для глубины
-     * @param current Current depth
-     * @param target Target depth
-     * @param dt Time step
-     * @return Управляющее воздействие
-     */
-    double depthPID(double current, double target, double dt);
-
-    /**
-     * @brief ПИД-регулятор для позиции
-     * @param current Current position
-     * @param target Target position
-     * @param dt Time step
-     * @return Управляющее воздействие
-     */
-    double positionPID(double current, double target, double dt);
-    // NavigationSystem *navSystem = nullptr;
-    // SensorMove * move_uWave = nullptr;
+    NavigationSystem *navSystem = nullptr;
+    SensorMove * sen_uWave = nullptr; //подключение гидроакустики
+    PressureSensor * senPressure = nullptr; //подключение датчика давления
+    IMUSensor * senIMU = nullptr; //подключение бсо
 };
 
 #endif // SU_ROV_H

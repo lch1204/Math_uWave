@@ -28,6 +28,12 @@ public:
         position.z += velocity.z * dt;
     }
 
+    void update_position_fromAUV(double x, double y, double z) {
+        position.x = x;
+        position.y = y;
+        position.z = z;
+    }
+
     double getHydroacousticDistData() const {
         return dist;
     }

@@ -7,9 +7,12 @@
 
 SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
 {
-    // move_uWave = new SensorMove();
-    // move_uWave->readConfig("config.json");
-    // move_uWave->run_simulation();
+    sen_uWave = new SensorMove();
+    sen_uWave->readConfig("config.json");
+    sen_uWave->addPositionAUV(0,0,10);
+    sen_uWave->addPositionModem(10,10,10);
+
+
 
     // Eigen::Vector3d beacon_pos;
 
@@ -28,22 +31,22 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     resetModel();
     timer.start(100);
 
-    m = 6.6;
-    cv1[1] = 7; cv1[2] = 49; cv1[3] = 40;
-    cv2[1] = 7; cv2[2] = 56; cv2[3] = 42;
-    cw1[1] = 1; cw1[2] = 1.4; cw1[3] = 4;
-    cw2[1] = 0.1; cw2[2] = 0.14; cw2[3] = 0.4;
+    m = 8.2;
+    cv1[1] = 7.4; cv1[2] = 5.9; cv1[3] = 10.0;
+    cv2[1] = 0.7; cv2[2] = 0.5; cv2[3] = 0.9;
+    cw1[1] = 1; cw1[2] = 1.4; cw1[3] = 0.018;
+    cw2[1] = 0.1; cw2[2] = 0.14; cw2[3] = 0.0018;
     //Vt[1] = 0.2; Vt[2] = 0.2; Vt[3] = 0.2; Vt[4] = 0; Vt[5] = 0; Vt[6] = 0; // скорость течения
     //Wv[1] = 0; Wv[2] = 0; Wv[3] = 0; Wv[4] = 0; Wv[5] = 0; Wv[6] = 0; //внешние возмущения, лин. скорости([1]-[3], угловые скорости - [4]-[6])
     //h[1]= ; h[2]= ; h[3]= ; // радиус-вектор координат центра водоизмещения
-    lambda[1][1] = 1; lambda[2][2] = 0.8; lambda[3][3] = 0.8;
-    lambda[4][4] = 0; lambda[5][5] = 0.4; lambda[6][6] = 0.4;
+    lambda[1][1] = 0.66; lambda[2][2] = 3.768; lambda[3][3] = 3.768;
+    lambda[4][4] = 0; lambda[5][5] = 0.0185; lambda[6][6] = 0.0185;
     Ta[1][1] = 0; Ta[1][2] = 0; Ta[1][3] = 1; Ta[1][4] = 1; Ta[1][5] = 0; Ta[1][6] = 0;
     Ta[2][1] = 0.766; Ta[2][2] = -0.766; Ta[2][3] = 0; Ta[2][4] = 0; Ta[2][5] = 0.766; Ta[2][6] = -0.766;
     Ta[3][1] = 0.64; Ta[3][2] = 0.64; Ta[3][3] = 0; Ta[3][4] = 0; Ta[3][5] = 0.64; Ta[3][6] = 0.64;
-    Ta[4][1] = -136.2; Ta[4][2] = 136.2; Ta[4][3] = 0; Ta[4][4] = 0; Ta[4][5] = -136.3; Ta[4][6] = 136.3;
-    Ta[5][1] = -136.6; Ta[5][2] = -136.6; Ta[5][3] = 0; Ta[5][4] = 0; Ta[5][5] = 136.6; Ta[5][6] = 136.6;
-    Ta[6][1] = 162.8; Ta[6][2] = -162.8; Ta[6][3] = 99; Ta[6][4] = -99; Ta[6][5] = -162.8; Ta[6][6] = 162.8;
+    Ta[4][1] = -136.2*0.001; Ta[4][2] = 136.2*0.001; Ta[4][3] = 0; Ta[4][4] = 0; Ta[4][5] = -136.3*0.001; Ta[4][6] = 136.3*0.001;
+    Ta[5][1] = -136.6*0.001; Ta[5][2] = -136.6*0.001; Ta[5][3] = 0; Ta[5][4] = 0; Ta[5][5] = 136.6*0.001; Ta[5][6] = 136.6*0.001;
+    Ta[6][1] = 162.8*0.001; Ta[6][2] = -162.8*0.001; Ta[6][3] = 99*0.001; Ta[6][4] = -99*0.001; Ta[6][5] = -162.8*0.001; Ta[6][6] = 162.8*0.001;
     //матрица сил и моментов инерции (проверить вторую матрицу, пока я вбила из мат модели, но кажется там я ошиблась она же не симметрична относительно оси, что странно)
     C[1][1] = 0; C[1][2] = (m+lambda[2][2])*a[20]; C[1][3] = -(m + lambda[3][3])*a[19]; C[1][4] = 0; C[1][5] = 0; C[1][6] = 0;
     C[2][1] = -(m + lambda[1][1])*a[20]; C[2][2] = 0; C[2][3] = (m + lambda[3][3])*a[18]; C[2][4] = 0; C[2][5] = 0; C[2][6] = 0;
@@ -51,7 +54,7 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     C[4][1] = 0; C[4][2] = 0; C[4][3] = 0; C[4][4] = 0; C[4][5] = -(J[3]+lambda[6][6])*a[20]; C[4][6] = (J[2]+lambda[5][5])*a[19];
     C[5][1] = 0; C[5][2] = 0; C[5][3] = 0; C[5][4] = (J[3]+lambda[6][6])*a[20]; C[5][5] = 0; C[5][6] = -(J[1]+lambda[4][4])*a[18];
     C[6][1] = 0; C[6][2] = 0; C[6][3] = 0; C[6][4] = -(J[2]+lambda[5][5])*a[19]; C[6][5] = (J[1]+lambda[4][4])*a[18]; C[6][6] = 0;
-    J[1] = 0.03; J[2] = 0.13; J[3] = 0.14; //моменты инерции вдоль соотв-х осей
+    J[1] = 0.02871; J[2] = 0.1045; J[3] = 0.1045; //моменты инерции вдоль соотв-х осей
     kd = 2; //коэффициент усиления движителей
     Td = 0.15; //постоянная времени движителей
     depth_limit=50;
@@ -235,7 +238,7 @@ void SU_ROV::resetModel(){
     for (int i=0; i<7;i++){
         Wv[i]=0;
         Vt[i]=0;
-        h[i]=0;   //потом исправить на реальное значение сверху
+        h[i]=0;
     }
 }
 
@@ -244,8 +247,9 @@ void SU_ROV::tick(const float Ttimer){
     // setTargetPoint(1,1);
     // moveToPoint(Ttimer);
     double usilenie = 50000;
-    BFS_DRK(1,0,0,0*usilenie,0,0);
+    BFS_DRK(1,0,0,1*usilenie,0,0);
     runge(X[50][0], X[60][0], X[70][0], X[80][0], X[90][0], X[100][0],Ttimer,Ttimer);
+    sen_uWave->run_simulation_with_MathAUV(x_global, y_global, z_global, Ttimer);
 }
 void SU_ROV::integrate(double &input, double &output, double &prevOutput, double dt) {
     output = prevOutput + dt*input;
@@ -281,7 +285,7 @@ SU_ROV::~SU_ROV(){
 
 }
 void SU_ROV::runge(const float Upl,const float Upp,const float Usl,const float Usp, const float Uzl, const float Uzp, const float Ttimer, const float dt) {
-    const double Kc = 180/M_PI;
+    const double Kc = 180/M_PI;// перевод в градусы
     double a1[24], y[24];
     int i;
     const double H1 = dt;
@@ -369,101 +373,4 @@ void SU_ROV::BFS_DRK(double Upsi, double Uteta, double Ugamma, double Ux, double
     X[80][0] = (K[50]*Ux + K[51]*Uy + K[52]*Uz + K[53]*Ugamma + K[54]*Uteta + K[55]*Upsi)*K[56];//U4
     X[90][0] = (K[60]*Ux + K[61]*Uy + K[62]*Uz + K[63]*Ugamma + K[64]*Uteta + K[65]*Upsi)*K[66];//U5
     X[100][0] =(K[70]*Ux + K[71]*Uy + K[72]*Uz + K[73]*Ugamma + K[74]*Uteta + K[75]*Upsi)*K[76];//U6
-}
-
-void SU_ROV::setTargetDepth(double depth) {
-    m_targetDepth = depth;
-}
-
-void SU_ROV::setTargetPoint(double x, double y) {
-    m_targetX = x;
-    m_targetY = y;
-}
-
-void SU_ROV::setCircleParams(double radius, double centerX, double centerY) {
-    m_circleRadius = radius;
-    m_circleCenterX = centerX;
-    m_circleCenterY = centerY;
-}
-
-double SU_ROV::depthPID(double current, double target, double dt) {
-    static double integral = 0.0;
-    static double prevError = 0.0;
-    const double Kp = 0.8;
-    const double Ki = 0.1;
-    const double Kd = 0.3;
-
-    double error = target - current;
-    integral += error * dt;
-    double derivative = (error - prevError) / dt;
-    prevError = error;
-
-    return Kp*error + Ki*integral + Kd*derivative;
-}
-
-double SU_ROV::positionPID(double current, double target, double dt) {
-    static double integral = 0.0;
-    static double prevError = 0.0;
-    const double Kp = 0.5;
-    const double Ki = 0.05;
-    const double Kd = 0.2;
-
-    double error = target - current;
-    integral += error * dt;
-    double derivative = (error - prevError) / dt;
-    prevError = error;
-
-    return Kp*error + Ki*integral + Kd*derivative;
-}
-
-void SU_ROV::moveToPoint(double dt) {
-    // Управление глубиной
-    double depthControl = depthPID(z_global, m_targetDepth, dt);
-
-    // Управление позицией по X и Y
-    double xControl = positionPID(x_global, m_targetX, dt);
-    double yControl = positionPID(y_global, m_targetY, dt);
-
-    // Преобразование глобальных координат в локальные
-    double localX = xControl * cos(Psi_g*M_PI/180) + yControl * sin(Psi_g*M_PI/180);
-    double localY = -xControl * sin(Psi_g*M_PI/180) + yControl * cos(Psi_g*M_PI/180);
-
-    // Расчет управляющих сигналов
-    Upl = qBound(-1.0f, static_cast<float>(localX + depthControl), 1.0f);
-    Upp = qBound(-1.0f, static_cast<float>(-localX + depthControl), 1.0f);
-    Usl = qBound(-1.0f, static_cast<float>(localY), 1.0f);
-    Usp = qBound(-1.0f, static_cast<float>(-localY), 1.0f);
-}
-
-void SU_ROV::followCircle(double dt) {
-    // Расчет текущего угла на окружности
-    double angle = atan2(y_global - m_circleCenterY, x_global - m_circleCenterX);
-
-    // Целевая точка на окружности
-    double targetX = m_circleCenterX + m_circleRadius * cos(angle + 0.1);
-    double targetY = m_circleCenterY + m_circleRadius * sin(angle + 0.1);
-
-    // Используем существующий алгоритм движения к точке
-    setTargetPoint(targetX, targetY);
-    moveToPoint(dt);
-}
-
-void SU_ROV::orbitPoint(double dt) {
-    // Расчет направления на центр
-    double dx = m_circleCenterX - x_global;
-    double dy = m_circleCenterY - y_global;
-    double targetAngle = atan2(dy, dx) * 180/M_PI + 90;
-
-    // Управление курсом
-    double angleError = targetAngle - Psi_g;
-    angleError = fmod(angleError + 180, 360) - 180;
-
-    // Пропорциональное управление
-    Uzl = qBound(-1.0f, static_cast<float>(angleError * 0.1), 1.0f);
-    Uzp = qBound(-1.0f, static_cast<float>(-angleError * 0.1), 1.0f);
-
-    // Поступательное движение вперед
-    const float forwardThrust = 0.3f;
-    Upl = forwardThrust;
-    Upp = forwardThrust;
 }

@@ -23,7 +23,7 @@
         "real_time_mode" : true
     },
     "aquarium_walls": {
-        "enabled": true,
+        "enabled": false,
         "left_x": 50.0,        
         "right_x": 0.0,        
         "front_y": 50.0,        

@@ -13,6 +13,9 @@
 
 using namespace std;
 
+extern double X[2000][2];
+extern QVector<double> K;
+
 class SensorMove
 {
     ReaderJson config;
@@ -32,7 +35,9 @@ class SensorMove
 public:
     SensorMove();
 
-    void run_simulation();
+    void run_simulation(); ///для вызова в основном тике без аппарата
+
+    void run_simulation_with_MathAUV(double x, double y, double z, double dt); ///для вызова в основном тике мат моделью аппарата
 
     vector<Sensor_uWave> sensors;
 
@@ -70,6 +75,10 @@ public:
 
     bool new_measurement_available = false;
 
+    bool delayAfterMeasurement = false;
+    double delayDt = 0;
+    double lastDistance =0;
+
     // В классе SensorMove добавить метод:
     std::optional<double> getCurrentDistance() const {
         if(new_measurement_available) {
@@ -79,7 +88,7 @@ public:
     }
 
     // Основной метод выполнения измерений
-    void perform_measurements();
+    void perform_measurements(double dt);
 
     std::deque<HydroMeasurement> hydro_buffer;
 
@@ -112,7 +121,7 @@ public:
 
 private:
     void process_delays(const vector<double>& delays, size_t sensor_id);
-    void run_measurement_cycle();;
+    void run_measurement_cycle(double dt);
 };
 
 #endif // SENSORMOVE_H

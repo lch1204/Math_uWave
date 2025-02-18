@@ -23,7 +23,7 @@ void SensorMove::run_simulation() {
         auto cycle_start = std::chrono::steady_clock::now();
 
         // Основной цикл измерений
-        run_measurement_cycle();
+        run_measurement_cycle(time_step);
 
         // Обновление времени симуляции
         simulation_time += time_step;
@@ -41,6 +41,29 @@ void SensorMove::run_simulation() {
     }
 }
 
+void SensorMove::run_simulation_with_MathAUV(double x, double y, double z, double dt)
+{
+    auto& transmitter = sensors[0];
+    transmitter.update_position_fromAUV(x,y,z);
+    auto cycle_start = std::chrono::steady_clock::now();
+
+    // Основной цикл измерений
+    run_measurement_cycle(dt);
+
+    // Обновление времени симуляции
+    simulation_time += dt; //dt - шаг симуляции
+
+    // Задержка для реального времени
+    // auto cycle_end = std::chrono::steady_clock::now();
+    // auto elapsed = std::chrono::duration<double>(cycle_end - cycle_start).count();
+    // if(elapsed < dt) {
+    //     std::this_thread::sleep_for(
+    //         std::chrono::duration<double>(dt - elapsed)
+    //         );
+    // }
+
+}
+
 void SensorMove::addPositionAUV(double x, double y, double z)
 {
     sensors.emplace_back(Point3D{x, y, z}, config);
@@ -56,16 +79,16 @@ void SensorMove::readConfig(const string &config_file)
     config.load(config_file);
     obstacles = config.get_obstacles();
 
-    //инициализация начального местоположения датчиков
-    try {
-        auto positions = config.get<vector<vector<double>>>("sensor.positions");
-        for(const auto& pos : positions) {
-            sensors.emplace_back(Point3D{pos[0], pos[1], pos[2]}, config);
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Ошибка при чтении 'sensor.positions': " << e.what() << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    // //инициализация начального местоположения датчиков
+    // try {
+    //     auto positions = config.get<vector<vector<double>>>("sensor.positions");
+    //     for(const auto& pos : positions) {
+    //         sensors.emplace_back(Point3D{pos[0], pos[1], pos[2]}, config);
+    //     }
+    // } catch (const std::exception& e) {
+    //     std::cerr << "Ошибка при чтении 'sensor.positions': " << e.what() << std::endl;
+    //     exit(EXIT_FAILURE);
+    // }
 
 
     // Настройка мобильности инициатора
@@ -76,9 +99,26 @@ void SensorMove::readConfig(const string &config_file)
     }
 }
 
-void SensorMove::perform_measurements() {
+
+
+void SensorMove::perform_measurements(double dt) {
     auto& transmitter = sensors[0]; // Инициатор (первый датчик)
 
+    if (delayAfterMeasurement)
+    {
+        double deltaZad = lastDistance/config.get<double>("sound_speed")+config.get<double>("measurement_delay");
+        if (deltaZad>delayDt)
+        {
+            delayDt+=dt;
+            return;
+        }
+        else
+        {
+            delayDt = 0;
+            delayAfterMeasurement = false;
+        }
+
+    }
 
     for (size_t i = 1; i < sensors.size(); ++i) {
         auto& receiver = sensors[i];
@@ -98,35 +138,41 @@ void SensorMove::perform_measurements() {
         // 3. Обработка результатов
         measurement_results.push_back(*selected_path);
         auto delays = receiver.receive_signal(* selected_path);
+
+
         if (selected_path) {
             // Сохранение результатов
 
             double distance = delays[0] ;
+            lastDistance = delays[0] ;
+            X[101][0] = distance;
             sensors[i].dist = distance;
 
             // Логирование
             qDebug() << "Measurement to sensor" << i
                      << "| Delay:" << distance
                      << "s | weight:" << selected_path->weight;
+            delayAfterMeasurement = true;
         } else {
             qDebug() << "No valid path to sensor" << i;
+            delayAfterMeasurement = true;
         }
 
-        // 4. Учет задержки между измерениями (из конфига)
-        if (config.get<bool>("measurement_delay_flag"))
-        {
-            double measurement_delay = config.get<double>("measurement_delay");
-            std::this_thread::sleep_for(
-                std::chrono::duration<double>(measurement_delay)
-                );
-        }
-        else
-        {
-            qDebug() << "delays[0]" << delays[0]/config.get<double>("sound_speed");
-            std::this_thread::sleep_for(
-                std::chrono::duration<double>(delays[0]/config.get<double>("sound_speed")+config.get<double>("measurement_delay"))
-                );
-        }
+        // // 4. Учет задержки между измерениями (из конфига)
+        // if (config.get<bool>("measurement_delay_flag"))
+        // {
+        //     double measurement_delay = config.get<double>("measurement_delay");
+        //     std::this_thread::sleep_for(
+        //         std::chrono::duration<double>(measurement_delay)
+        //         );
+        // }
+        // else
+        // {
+        //     qDebug() << "delays[0]" << delays[0]/config.get<double>("sound_speed");
+        //     std::this_thread::sleep_for(
+        //         std::chrono::duration<double>()
+        //         );
+        // }
     }
 }
 
@@ -144,7 +190,7 @@ void SensorMove::process_delays(const vector<double> &delays, size_t sensor_id) 
          << delays.size() << " paths)" << endl;
 }
 
-void SensorMove::run_measurement_cycle() {
+void SensorMove::run_measurement_cycle(double dt) {
     if(is_waiting) {
         // Логика таймаута
         auto now = std::chrono::steady_clock::now();
@@ -157,8 +203,11 @@ void SensorMove::run_measurement_cycle() {
             return;
         }
     }
-    Point3D tr =sensors[0].get_position();
+    Point3D tr = sensors[0].get_position();
     Point3D rx = sensors[1].get_position();
+    qDebug() << "tr.x-" << tr.x<< "rx.x-"<< rx.x;
+    qDebug() << "tr.y-" << tr.y<< "rx.y-"<< rx.y;
+    qDebug() << "tr.z-" << tr.z<< "rx.z-"<< rx.z;
     double res = sqrt(pow(tr.x-rx.x,2)+pow(tr.y-rx.y,2)+pow(tr.z-rx.z,2)); //расстояние между двумя маяками ответчиками
 
     double procent_loss =sqrt(10.01*res-10.01)/100; //параметр
@@ -170,5 +219,5 @@ void SensorMove::run_measurement_cycle() {
     }
 
     // Основная логика измерений
-    perform_measurements();
+    perform_measurements(dt);
 }
