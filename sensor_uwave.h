@@ -12,6 +12,7 @@ class Sensor_uWave
     ReaderJson& config;
     default_random_engine gen;
     normal_distribution<double> noise_dist;
+
     bool is_mobile = false;
 
 public:
@@ -27,8 +28,11 @@ public:
         position.z += velocity.z * dt;
     }
 
-    vector<double> receive_signal(const Point3D& sender_pos,
-                                  const RayPath& selected_path) {
+    double getHydroacousticDistData() const {
+        return dist;
+    }
+
+    vector<double> receive_signal(const RayPath& selected_path) {
         vector<double> delays;
 
         // Добавляем шум к задержке выбранного пути
@@ -41,6 +45,7 @@ public:
     const Point3D& get_position() const { return position; }
     void set_mobility(bool mobile) { is_mobile = mobile; }
     void set_velocity(const Point3D& vel) { velocity = vel; }
+    double dist = 0; //дистанция между модемами
 };
 
 #endif // SENSOR_UWAVE_H

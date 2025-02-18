@@ -7,6 +7,12 @@
 using namespace std;
 
 //Содержит все структуры данных
+
+struct HydroMeasurement {
+    double distance;
+    double timestamp;
+};
+
 struct Point3D {
     double x, y, z;
     bool operator!=(const Point3D& other) const

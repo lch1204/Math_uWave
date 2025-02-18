@@ -3,7 +3,9 @@
 
 #include "readerjson.h"
 #include "sensor_uwave.h"
+#include <deque>
 #include <iostream>
+#include <mutex>
 #include <ostream>
 #include <qt5/QtCore/qglobal.h>
 #include <random>
@@ -14,7 +16,7 @@ using namespace std;
 class SensorMove
 {
     ReaderJson config;
-    vector<Sensor_uWave> sensors;
+
     vector<Obstacle> obstacles;
     double simulation_time = 0.0;
     bool is_waiting = false;
@@ -23,10 +25,16 @@ class SensorMove
     std::mt19937 gen{std::random_device{}()}; // Генератор случайных чисел
     vector<RayPath> measurement_results; // Сохраненные результаты измерений
 
+    std::atomic<bool> new_hydro_measurement{false};
+    double last_distance{0.0};
+    std::mutex data_mutex;
+
 public:
     SensorMove();
 
     void run_simulation();
+
+    vector<Sensor_uWave> sensors;
 
     void addPositionAUV(double x, double y, double z);
     void addPositionModem(double x, double y, double z);
@@ -60,8 +68,47 @@ public:
         std::cout << "Signal lost! Starting timeout..." << endl;
     }
 
+    bool new_measurement_available = false;
+
+    // В классе SensorMove добавить метод:
+    std::optional<double> getCurrentDistance() const {
+        if(new_measurement_available) {
+            return sensors[1].dist;
+        }
+        return std::nullopt;
+    }
+
     // Основной метод выполнения измерений
     void perform_measurements();
+
+    std::deque<HydroMeasurement> hydro_buffer;
+
+    // Метод для обновления данных от гидроакустики (вызывается извне при получении)
+    void updateHydroacousticData(double distance) {
+        std::lock_guard<std::mutex> lock(data_mutex);
+        hydro_buffer.emplace_back(HydroMeasurement{
+            distance,
+            get_current_time()
+        });
+    }
+
+    // Метод для проверки и получения данных
+    std::optional<HydroMeasurement> getNextHydroData() {
+        std::lock_guard<std::mutex> lock(data_mutex);
+        if(!hydro_buffer.empty()) {
+            auto data = hydro_buffer.front();
+            hydro_buffer.pop_front();
+            return data;
+        }
+        return std::nullopt;
+    }
+
+    double get_current_time() {
+        static auto start_time = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::steady_clock::now();
+        std::chrono::duration<double> elapsed = current_time - start_time;
+        return elapsed.count();
+    }
 
 private:
     void process_delays(const vector<double>& delays, size_t sensor_id);

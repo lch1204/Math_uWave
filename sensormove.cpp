@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <iostream>
 #include <qt5/QtCore/qglobal.h>
-#include <random>
 #include <QDebug>
 #include <thread>
 
@@ -98,14 +97,12 @@ void SensorMove::perform_measurements() {
 
         // 3. Обработка результатов
         measurement_results.push_back(*selected_path);
-        auto delays = receiver.receive_signal(
-            transmitter.get_position(),
-            * selected_path
-            );
+        auto delays = receiver.receive_signal(* selected_path);
         if (selected_path) {
             // Сохранение результатов
 
             double distance = delays[0] ;
+            sensors[i].dist = distance;
 
             // Логирование
             qDebug() << "Measurement to sensor" << i
