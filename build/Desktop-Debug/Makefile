@@ -14,10 +14,10 @@ EQ            = =
 
 CC            = gcc
 CXX           = g++
-DEFINES       = -DQT_QML_DEBUG -DQT_NETWORK_LIB -DQT_CORE_LIB
+DEFINES       = -DQT_QML_DEBUG -DQT_CHARTS_LIB -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -g -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -g -std=gnu++1z -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
-INCPATH       = -I../../../Math_uWave -I. -I../../include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++
+INCPATH       = -I../../../Math_uWave -I. -I../../include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I. -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++
 QMAKE         = /usr/lib/qt5/bin/qmake
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
@@ -40,7 +40,7 @@ DISTNAME      = Math_uWave1.0.0
 DISTDIR = /home/lch/Math_uWave/build/Desktop-Debug/.tmp/Math_uWave1.0.0
 LINK          = g++
 LFLAGS        = 
-LIBS          = $(SUBLIBS) /usr/lib/x86_64-linux-gnu/libQt5Network.so /usr/lib/x86_64-linux-gnu/libQt5Core.so -lpthread   
+LIBS          = $(SUBLIBS) /usr/lib/x86_64-linux-gnu/libQt5Charts.so /usr/lib/x86_64-linux-gnu/libQt5Widgets.so /usr/lib/x86_64-linux-gnu/libQt5Gui.so /usr/lib/x86_64-linux-gnu/libQt5Network.so /usr/lib/x86_64-linux-gnu/libQt5Core.so -lGL -lpthread   
 AR            = ar cqs
 RANLIB        = 
 SED           = sed
@@ -52,7 +52,8 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = ../../main.cpp \
+SOURCES       = ../../form.cpp \
+		../../main.cpp \
 		../../readerjson.cpp \
 		../../sensormove.cpp \
 		../../signalpropagation.cpp \
@@ -60,11 +61,13 @@ SOURCES       = ../../main.cpp \
 		../../MathAUV/kx_protocol.cpp \
 		../../MathAUV/qkx_coeffs.cpp \
 		../../MathAUV/qpiconfig.cpp \
-		../../MathAUV/su_rov.cpp moc_configdata.cpp \
+		../../MathAUV/su_rov.cpp moc_form.cpp \
+		moc_configdata.cpp \
 		moc_kx_protocol.cpp \
 		moc_qkx_coeffs.cpp \
 		moc_su_rov.cpp
-OBJECTS       = main.o \
+OBJECTS       = form.o \
+		main.o \
 		readerjson.o \
 		sensormove.o \
 		signalpropagation.o \
@@ -73,6 +76,7 @@ OBJECTS       = main.o \
 		qkx_coeffs.o \
 		qpiconfig.o \
 		su_rov.o \
+		moc_form.o \
 		moc_configdata.o \
 		moc_kx_protocol.o \
 		moc_qkx_coeffs.o \
@@ -155,6 +159,8 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/resources_functions.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/resources.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/moc.prf \
+		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/unix/opengl.prf \
+		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/uic.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/unix/thread.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qmake_use.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/file_copies.prf \
@@ -166,6 +172,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		../../Navigation/NavigationSystem.h \
 		../../SensorIMU.h \
 		../../SensorPressure.h \
+		../../form.h \
 		../../readerjson.h \
 		../../sensormove.h \
 		../../signalpropagation.h \
@@ -175,7 +182,8 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		../../MathAUV/kx_protocol.h \
 		../../MathAUV/qkx_coeffs.h \
 		../../MathAUV/qpiconfig.h \
-		../../MathAUV/su_rov.h ../../main.cpp \
+		../../MathAUV/su_rov.h ../../form.cpp \
+		../../main.cpp \
 		../../readerjson.cpp \
 		../../sensormove.cpp \
 		../../signalpropagation.cpp \
@@ -192,7 +200,7 @@ TARGET        = ../../config/Math_uWave
 first: all
 ####### Build rules
 
-../../config/Math_uWave:  $(OBJECTS)  
+../../config/Math_uWave: ui_form.h $(OBJECTS)  
 	@test -d ../../config/ || mkdir -p ../../config/
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
@@ -274,6 +282,8 @@ Makefile: ../../Math_uWave.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/q
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/resources_functions.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/resources.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/moc.prf \
+		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/unix/opengl.prf \
+		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/uic.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/unix/thread.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qmake_use.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/file_copies.prf \
@@ -361,6 +371,8 @@ Makefile: ../../Math_uWave.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/q
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/resources_functions.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/resources.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/moc.prf:
+/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/unix/opengl.prf:
+/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/uic.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/unix/thread.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qmake_use.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/file_copies.prf:
@@ -384,8 +396,9 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../../Navigation/NavigationFilter.h ../../Navigation/NavigationSystem.h ../../SensorIMU.h ../../SensorPressure.h ../../readerjson.h ../../sensormove.h ../../signalpropagation.h ../../stucturs.h ../../sensor_uwave.h ../../MathAUV/configdata.h ../../MathAUV/kx_protocol.h ../../MathAUV/qkx_coeffs.h ../../MathAUV/qpiconfig.h ../../MathAUV/su_rov.h $(DISTDIR)/
-	$(COPY_FILE) --parents ../../main.cpp ../../readerjson.cpp ../../sensormove.cpp ../../signalpropagation.cpp ../../MathAUV/configdata.cpp ../../MathAUV/kx_protocol.cpp ../../MathAUV/qkx_coeffs.cpp ../../MathAUV/qpiconfig.cpp ../../MathAUV/su_rov.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../../Navigation/NavigationFilter.h ../../Navigation/NavigationSystem.h ../../SensorIMU.h ../../SensorPressure.h ../../form.h ../../readerjson.h ../../sensormove.h ../../signalpropagation.h ../../stucturs.h ../../sensor_uwave.h ../../MathAUV/configdata.h ../../MathAUV/kx_protocol.h ../../MathAUV/qkx_coeffs.h ../../MathAUV/qpiconfig.h ../../MathAUV/su_rov.h $(DISTDIR)/
+	$(COPY_FILE) --parents ../../form.cpp ../../main.cpp ../../readerjson.cpp ../../sensormove.cpp ../../signalpropagation.cpp ../../MathAUV/configdata.cpp ../../MathAUV/kx_protocol.cpp ../../MathAUV/qkx_coeffs.cpp ../../MathAUV/qpiconfig.cpp ../../MathAUV/su_rov.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../../form.ui $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -417,25 +430,31 @@ compiler_moc_predefs_clean:
 moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 	g++ -pipe -g -std=gnu++1z -Wall -Wextra -dM -E -o moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: moc_configdata.cpp moc_kx_protocol.cpp moc_qkx_coeffs.cpp moc_su_rov.cpp
+compiler_moc_header_make_all: moc_form.cpp moc_configdata.cpp moc_kx_protocol.cpp moc_qkx_coeffs.cpp moc_su_rov.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_configdata.cpp moc_kx_protocol.cpp moc_qkx_coeffs.cpp moc_su_rov.cpp
+	-$(DEL_FILE) moc_form.cpp moc_configdata.cpp moc_kx_protocol.cpp moc_qkx_coeffs.cpp moc_su_rov.cpp
+moc_form.cpp: ../../form.h \
+		ui_form.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../form.h -o moc_form.cpp
+
 moc_configdata.cpp: ../../MathAUV/configdata.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../MathAUV/configdata.h -o moc_configdata.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../MathAUV/configdata.h -o moc_configdata.cpp
 
 moc_kx_protocol.cpp: ../../MathAUV/kx_protocol.h \
 		../../MathAUV/qpiconfig.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../MathAUV/kx_protocol.h -o moc_kx_protocol.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../MathAUV/kx_protocol.h -o moc_kx_protocol.cpp
 
 moc_qkx_coeffs.cpp: ../../MathAUV/qkx_coeffs.h \
 		../../MathAUV/qpiconfig.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../MathAUV/qkx_coeffs.h -o moc_qkx_coeffs.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../MathAUV/qkx_coeffs.h -o moc_qkx_coeffs.cpp
 
 moc_su_rov.cpp: ../../MathAUV/su_rov.h \
 		../../MathAUV/qkx_coeffs.h \
@@ -739,21 +758,32 @@ moc_su_rov.cpp: ../../MathAUV/su_rov.h \
 		../../signalpropagation.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../MathAUV/su_rov.h -o moc_su_rov.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../MathAUV/su_rov.h -o moc_su_rov.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
 compiler_moc_source_make_all:
 compiler_moc_source_clean:
+compiler_uic_make_all: ui_form.h
+compiler_uic_clean:
+	-$(DEL_FILE) ui_form.h
+ui_form.h: ../../form.ui \
+		/usr/lib/qt5/bin/uic
+	/usr/lib/qt5/bin/uic ../../form.ui -o ui_form.h
+
 compiler_yacc_decl_make_all:
 compiler_yacc_decl_clean:
 compiler_yacc_impl_make_all:
 compiler_yacc_impl_clean:
 compiler_lex_make_all:
 compiler_lex_clean:
-compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean 
+compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_uic_clean 
 
 ####### Compile
+
+form.o: ../../form.cpp ../../form.h \
+		ui_form.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o form.o ../../form.cpp
 
 main.o: ../../main.cpp ../../MathAUV/su_rov.h \
 		../../MathAUV/qkx_coeffs.h \
@@ -1526,6 +1556,9 @@ su_rov.o: ../../MathAUV/su_rov.cpp ../../MathAUV/su_rov.h \
 		../../sensor_uwave.h \
 		../../signalpropagation.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o su_rov.o ../../MathAUV/su_rov.cpp
+
+moc_form.o: moc_form.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_form.o moc_form.cpp
 
 moc_configdata.o: moc_configdata.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_configdata.o moc_configdata.cpp

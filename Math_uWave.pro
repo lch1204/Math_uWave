@@ -1,11 +1,12 @@
-QT = core
+QT = core gui charts
 QT += network
-
+QT += widgets
 TEMPLATE = app
 
 CONFIG += c++17 cmdline
 
 SOURCES += \
+        form.cpp \
         main.cpp \
         readerjson.cpp \
         sensormove.cpp \
@@ -21,6 +22,7 @@ HEADERS += \
     Navigation/NavigationSystem.h \
     SensorIMU.h \
     SensorPressure.h \
+    form.h \
     readerjson.h \
     sensormove.h \
     signalpropagation.h \
@@ -40,3 +42,6 @@ DESTDIR = $$PWD/config
 # Указываем путь установки (если нужно)
 target.path = $$PWD/config
 INSTALLS += target
+
+FORMS += \
+    form.ui

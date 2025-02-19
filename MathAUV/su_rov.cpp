@@ -2,11 +2,15 @@
 #include <cmath>
 #include <iostream>
 #include <Eigen/Dense>
+#include <QApplication>
 
 
 
 SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
 {
+
+
+
     double dt = 0.01;
     first_measurement_ = true; // Инициализация флага
 
@@ -82,7 +86,7 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
 
     // В конструкторе SU_ROV:
     Q_ = Eigen::MatrixXd::Identity(6, 6) * 0.01;  // Шум процесса (меньше = больше доверия модели)
-    R_ = Eigen::MatrixXd::Identity(1, 1) * 0.5;   // Шум измерений (меньше = больше доверия датчику)
+    R_ = Eigen::MatrixXd::Identity(1, 1) * 0.1;   // Шум измерений (меньше = больше доверия датчику)
 
     beacon_position_ << 10.0, 10.0, 10.0; // Пример координат маяка
     last_update_time_ = 0.0;
@@ -291,18 +295,13 @@ void SU_ROV::tick(const float Ttimer){
     // Прогнозирование состояния каждые 0.01 сек
     prediction(Ttimer);
 
-    // Коррекция при наличии новых данных от модема
-    if (distance > 0) {
+    // Коррекция только при валидных измерениях
+    if (distance > 0 && check_measurement_validity(distance, Ttimer)) {
         correction(distance);
-        // В методе tick()
-        qDebug() << "EKF corrected. State: "
-                 << state_(0) << ", "
-                 << state_(1) << ", "
-                 << state_(2) << ", "
-                 << "Vx:" << state_(3)
-                 << "Vy:" << state_(4)
-                 << "Vz:" << state_(5);
     }
+
+    // Обновление глубины
+    state_(2) = depth;
 
     // Обновляем только EKF-координаты
     ekf_x = state_(0);
@@ -311,7 +310,26 @@ void SU_ROV::tick(const float Ttimer){
     X[141][0] = ekf_x;
     X[142][0] = ekf_y;
     X[143][0] = ekf_z;
+
+    emit updateCoromAUVEkf(ekf_x, ekf_y);
+    emit updateCoromAUVReal(x_global, y_global);
+    emit updateCircle(X[101][0]);
 }
+
+bool SU_ROV::check_measurement_validity(double distance, double dt) {
+    // Рассчет положения по модели
+    Eigen::Vector3d AUV_position(state_(0), state_(1), state_(2));
+    Eigen::Vector3d beacon_pos(beacon_position_);
+
+    double model_distance = (AUV_position - beacon_pos).norm();
+    double max_delta = MAX_SPEED * dt * SAFETY_FACTOR*100;
+
+    qDebug() << "distance" << distance << "; model_distance" <<model_distance << "; max_delta" << max_delta;
+    qDebug() << "return"<< (fabs(distance - model_distance) <= max_delta);
+    // return fabs(distance - model_distance) <= max_delta;
+    return true;
+}
+
 void SU_ROV::integrate(double &input, double &output, double &prevOutput, double dt) {
     output = prevOutput + dt*input;
     prevOutput = output;
@@ -434,4 +452,33 @@ void SU_ROV::BFS_DRK(double Upsi, double Uteta, double Ugamma, double Ux, double
     X[80][0] = (K[50]*Ux + K[51]*Uy + K[52]*Uz + K[53]*Ugamma + K[54]*Uteta + K[55]*Upsi)*K[56];//U4
     X[90][0] = (K[60]*Ux + K[61]*Uy + K[62]*Uz + K[63]*Ugamma + K[64]*Uteta + K[65]*Upsi)*K[66];//U5
     X[100][0] =(K[70]*Ux + K[71]*Uy + K[72]*Uz + K[73]*Ugamma + K[74]*Uteta + K[75]*Upsi)*K[76];//U6
+}
+
+Eigen::Matrix3d SU_ROV::eulerRotationMatrix(const Eigen::Vector3d& eulerAnglesDegrees) {
+    // Преобразование углов из градусов в радианы
+    double psi = eulerAnglesDegrees[2] * M_PI / 180.0; // Рыскание (Z)
+    double theta = eulerAnglesDegrees[1] * M_PI / 180.0; // Тангаж (Y)
+    double gamma = eulerAnglesDegrees[0] * M_PI / 180.0; // Крен (X)
+
+    // Матрица поворота вокруг оси Z (рыскание)
+    Eigen::Matrix3d Rz;
+    Rz << cos(psi), -sin(psi), 0,
+        sin(psi),  cos(psi), 0,
+        0,         0,        1;
+
+    // Матрица поворота вокруг оси Y (тангаж)
+    Eigen::Matrix3d Ry;
+    Ry << cos(theta), 0, sin(theta),
+        0,          1, 0,
+        -sin(theta), 0, cos(theta);
+
+    // Матрица поворота вокруг оси X (крен)
+    Eigen::Matrix3d Rx;
+    Rx << 1, 0,          0,
+        0, cos(gamma), -sin(gamma),
+        0, sin(gamma),  cos(gamma);
+
+    // Комбинированная матрица поворота: Rz * Ry * Rx (Z-Y-X)
+    Eigen::Matrix3d rotationMatrix = Rz * Ry * Rx;
+    return rotationMatrix;
 }

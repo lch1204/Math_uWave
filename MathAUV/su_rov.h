@@ -11,7 +11,6 @@
 #include "SensorIMU.h"
 #include "SensorPressure.h"
 
-
 #define ANPA_MOD_CNT 24
 
 extern double X[2000][2];
@@ -137,6 +136,21 @@ protected:
  * @param dt Шаг времени (сек)
  */
     void prediction(double dt) {
+        // Получаем ориентацию из IMU
+        Eigen::Vector3d orientation = senIMU->getOutput().orientation;
+
+        // Преобразуем скорость в глобальную СК
+        Eigen::Matrix3d rotationMatrix = eulerRotationMatrix(orientation);
+        Eigen::Vector3d global_velocity = rotationMatrix * state_.segment<3>(3);
+        // Прогноз положения
+        state_.segment<3>(0) += global_velocity * dt;
+        // Рассчет максимального смещения
+        double max_shift = MAX_SPEED * dt * SAFETY_FACTOR;
+
+        // Ограничение скорости в модели
+        state_(3) = std::clamp(state_(3), -MAX_SPEED, MAX_SPEED); // Vx
+        state_(4) = std::clamp(state_(4), -MAX_SPEED, MAX_SPEED); // Vy
+        state_(5) = std::clamp(state_(5), -MAX_SPEED, MAX_SPEED); // Vz
         // Получаем данные IMU
         IMUOutput imu_data = senIMU->getOutput();
 
@@ -167,21 +181,31 @@ protected:
             first_measurement_ = false;
             qDebug() << "Инициализация EKF: x=" << state_(0) << " y=" << state_(1) << " z=" << state_(2);
         }
-        // Координаты АНПА из EKF
-        double x_auv = state_(0);
-        double y_auv = state_(1);
-        double z_auv = state_(2);
 
-        // Координаты маяка
-        double x_beacon = beacon_position_(0);
-        double y_beacon = beacon_position_(1);
-        double z_beacon = beacon_position_(2);
+        double current_time = QDateTime::currentMSecsSinceEpoch() / 1000.0;
+        double dt = current_time - last_correction_time_;
+        last_correction_time_ = current_time;
 
-        // Расстояние между АНПА и маяком
-        double dx = x_auv - x_beacon;
-        double dy = y_auv - y_beacon;
-        double dz = z_auv - z_beacon;
+        // Рассчет предсказанного расстояния
+        double dx = state_(0) - beacon_position_(0);
+        double dy = state_(1) - beacon_position_(1);
+        double dz = state_(2) - beacon_position_(2);
         double predicted_distance = sqrt(dx*dx + dy*dy + dz*dz);
+
+        // Вычисление доверительного интервала
+        double max_delta = MAX_SPEED * dt * SAFETY_FACTOR;
+        double lower_bound = predicted_distance - max_delta;
+        double upper_bound = predicted_distance + max_delta;
+
+        // Проверка валидности измерения
+        if (measured_distance < lower_bound || measured_distance > upper_bound) {
+            rejected_measurements_++;
+            qDebug() << "Отброшено нереалистичное измерение:" << measured_distance
+                     << "Допустимый диапазон: [" << lower_bound << "-" << upper_bound << "]"
+                     << "Отклонение:" << fabs(measured_distance - predicted_distance)
+                     << "Счётчик отброшенных:" << rejected_measurements_;
+            return;
+        }
 
         // Проверка на минимальное расстояние
         if (predicted_distance < 1e-3) {
@@ -211,6 +235,8 @@ protected:
         qDebug() << "Коэффициент Калмана K:" << K(0) << "K(1)" << K(1) << "K(2)" << K(2);
     }
 
+    bool check_measurement_validity(double distance, double dt);
+
 private:
     bool first_measurement_; // Флаг первого измерения
     // Состояние EKF: [x, y, z, vx, vy, vz]
@@ -229,6 +255,19 @@ private:
     Eigen::Vector3d beacon_position_;
     // Время последнего обновления
     double last_update_time_;
+
+    const double MAX_SPEED = 2.0; // Максимальная скорость аппарата (м/с)
+    const double SAFETY_FACTOR = 1.2; // Запас на погрешность
+    double last_correction_time_ = 0.0;
+    int rejected_measurements_ = 0;
+
+    Eigen::Matrix3d eulerRotationMatrix(const Eigen::Vector3d& eulerAngles);
+
+signals:
+    void updateCoromAUVReal(double x, double y);
+    void updateCoromAUVEkf(double x, double y);
+    void updateCircle(double r);
+
 };
 
 #endif // SU_ROV_H
