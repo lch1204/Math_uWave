@@ -137,27 +137,22 @@ protected:
  */
     void prediction(double dt) {
         // Получаем ориентацию из IMU
+        // Обновить матрицу F с актуальным dt
+        F_.block<3,3>(0,3) = Eigen::Matrix3d::Identity() * dt;
         Eigen::Vector3d orientation = senIMU->getOutput().orientation;
 
         // Преобразуем скорость в глобальную СК
         Eigen::Matrix3d rotationMatrix = eulerRotationMatrix(orientation);
         Eigen::Vector3d global_velocity = rotationMatrix * state_.segment<3>(3);
+
+
         // Прогноз положения
         state_.segment<3>(0) += global_velocity * dt;
         // Рассчет максимального смещения
         double max_shift = MAX_SPEED * dt * SAFETY_FACTOR;
 
-        // Ограничение скорости в модели
-        state_(3) = std::clamp(state_(3), -MAX_SPEED, MAX_SPEED); // Vx
-        state_(4) = std::clamp(state_(4), -MAX_SPEED, MAX_SPEED); // Vy
-        state_(5) = std::clamp(state_(5), -MAX_SPEED, MAX_SPEED); // Vz
         // Получаем данные IMU
         IMUOutput imu_data = senIMU->getOutput();
-
-        // Прогнозируем положение на основе линейных скоростей из IMU
-        state_(0) += imu_data.speed(0) * dt; // x += Vx * dt
-        state_(1) += imu_data.speed(1) * dt; // y += Vy * dt
-        state_(2) += imu_data.speed(2) * dt; // z += Vz * dt
 
         // Прогнозируем скорость (если нужно)
         state_(3) = imu_data.speed(0); // Vx
@@ -172,70 +167,54 @@ protected:
  * @brief Коррекция состояния по измерению расстояния до маяка
  * @param measured_distance Измеренное расстояние (м)
  */
-    void correction(double measured_distance) {
-        if (first_measurement_) {
-            // Инициализация состояния по первому измерению
-            state_(0) = x_global;
-            state_(1) = y_global;
-            state_(2) = z_global;
-            first_measurement_ = false;
-            qDebug() << "Инициализация EKF: x=" << state_(0) << " y=" << state_(1) << " z=" << state_(2);
-        }
-
-        double current_time = QDateTime::currentMSecsSinceEpoch() / 1000.0;
-        double dt = current_time - last_correction_time_;
-        last_correction_time_ = current_time;
-
-        // Рассчет предсказанного расстояния
-        double dx = state_(0) - beacon_position_(0);
-        double dy = state_(1) - beacon_position_(1);
-        double dz = state_(2) - beacon_position_(2);
-        double predicted_distance = sqrt(dx*dx + dy*dy + dz*dz);
-
-        // Вычисление доверительного интервала
-        double max_delta = MAX_SPEED * dt * SAFETY_FACTOR;
-        double lower_bound = predicted_distance - max_delta;
-        double upper_bound = predicted_distance + max_delta;
-
-        // Проверка валидности измерения
-        if (measured_distance < lower_bound || measured_distance > upper_bound) {
-            rejected_measurements_++;
-            qDebug() << "Отброшено нереалистичное измерение:" << measured_distance
-                     << "Допустимый диапазон: [" << lower_bound << "-" << upper_bound << "]"
-                     << "Отклонение:" << fabs(measured_distance - predicted_distance)
-                     << "Счётчик отброшенных:" << rejected_measurements_;
-            return;
-        }
-
-        // Проверка на минимальное расстояние
-        if (predicted_distance < 1e-3) {
-            qDebug() << "Ошибка: АНПА и маяк в одной точке!";
-            return;
-        }
-
-        // Матрица Якоби H (производные расстояния по координатам)
-        H_(0, 0) = dx / predicted_distance;
-        H_(0, 1) = dy / predicted_distance;
-        H_(0, 2) = dz / predicted_distance;
-
-        // Обновление по Калману
-        Eigen::VectorXd z(1);
-        z << measured_distance;
-        Eigen::VectorXd y = z - Eigen::VectorXd::Constant(1, predicted_distance);
-        Eigen::MatrixXd S = H_ * covariance_ * H_.transpose() + R_;
-        Eigen::MatrixXd K = covariance_ * H_.transpose() * S.inverse();
-
-        // Коррекция состояния и ковариации
-        state_ = state_ + K * y;
-        covariance_ = (Eigen::MatrixXd::Identity(6, 6) - K * H_) * covariance_;
-
-        qDebug() << "Измеренное расстояние:" << measured_distance;
-        qDebug() << "Предсказанное расстояние:" << predicted_distance;
-        qDebug() << "Матрица H:" << H_(0, 0) << "H_(0, 1)" << H_(0, 1) <<"H_(0, 2)" << H_(0, 2);
-        qDebug() << "Коэффициент Калмана K:" << K(0) << "K(1)" << K(1) << "K(2)" << K(2);
+void correction(double measured_distance) {
+    if (first_measurement_) {
+        state_.head<3>() << x_global, y_global, z_global;
+        first_measurement_ = false;
+        return;
     }
 
+    double dt = simulation_time_ - last_correction_time_;
+    last_correction_time_ = simulation_time_;
+
+    // Прогноз положения с учетом ориентации
+    Eigen::Matrix3d rotation = eulerRotationMatrix(senIMU->getOutput().orientation);
+    updateProcessMatrix(dt, rotation);
+
+    // Предсказанное расстояние
+    Eigen::Vector3d delta = state_.head<3>() - beacon_position_;
+    double predicted_distance = delta.norm(); // Локальная переменная
+
+
+    // Матрица Якоби
+    if(predicted_distance > 1e-3) {
+        H_ << delta.x()/predicted_distance,
+            delta.y()/predicted_distance,
+            delta.z()/predicted_distance,
+            0, 0, 0;
+    }
+    H_.block<1,3>(0,0) = delta.transpose().normalized();
+    H_.block<1,3>(0,3).setZero();
+
+    // Обновление Калмана
+    Eigen::VectorXd z(1);
+    z << measured_distance;
+
+    Eigen::VectorXd y = z - H_ * state_;
+    Eigen::MatrixXd S = H_ * covariance_ * H_.transpose() + R_;
+    Eigen::MatrixXd K = covariance_ * H_.transpose() * S.inverse();
+
+    state_ += K * y;
+    covariance_ = (Eigen::MatrixXd::Identity(6,6) - K * H_) * covariance_;
+}
+
+
     bool check_measurement_validity(double distance, double dt);
+    // Модифицируем матрицу F_ с учетом ориентации
+    void updateProcessMatrix(double dt, const Eigen::Matrix3d& rotation) {
+        F_.block<3,3>(0,3) = rotation * dt;
+    }
+    double predicted_distance = 0;
 
 private:
     bool first_measurement_; // Флаг первого измерения
@@ -257,16 +236,21 @@ private:
     double last_update_time_;
 
     const double MAX_SPEED = 2.0; // Максимальная скорость аппарата (м/с)
-    const double SAFETY_FACTOR = 1.2; // Запас на погрешность
-    double last_correction_time_ = 0.0;
+    const double SAFETY_FACTOR = 2.2; // Запас на погрешность
+    double time_correction = 0;
     int rejected_measurements_ = 0;
 
     Eigen::Matrix3d eulerRotationMatrix(const Eigen::Vector3d& eulerAngles);
+private:
+    double simulation_time_ = 0.0; // Текущее время моделирования
+    double last_correction_time_ = 0.0; // Время последней коррекции
 
 signals:
     void updateCoromAUVReal(double x, double y);
     void updateCoromAUVEkf(double x, double y);
     void updateCircle(double r);
+    void updateVelocityVector_ekf(double vx, double vy);
+    void updateVelocityVector_real(double vx, double vy);
 
 };
 

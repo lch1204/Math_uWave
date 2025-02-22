@@ -12,8 +12,10 @@ int main(int argc, char *argv[])
     Form form;
     form.show();
 
-    QObject::connect(&su, &SU_ROV::updateCoromAUVReal, &form, &Form::setXY_auv_real);
-    QObject::connect(&su, &SU_ROV::updateCoromAUVEkf, &form, &Form::setXY_auv_ekf);
-    QObject::connect(&su, &SU_ROV::updateCircle, &form, &Form::setCircle);
+    QObject::connect(&su, &SU_ROV::updateCoromAUVReal,        &form, &Form::setXY_auv_real);
+    QObject::connect(&su, &SU_ROV::updateCoromAUVEkf,         &form, &Form::setXY_auv_ekf);
+    QObject::connect(&su, &SU_ROV::updateCircle,              &form, &Form::setCircle);
+    QObject::connect(&su, &SU_ROV::updateVelocityVector_ekf,  &form, &Form::setVelocityVector_ekf);
+    QObject::connect(&su, &SU_ROV::updateVelocityVector_real, &form, &Form::setVelocityVector_real);
     return a.exec();
 }

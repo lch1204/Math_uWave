@@ -8,7 +8,16 @@
 
 SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
 {
+    // Инициализация EKF
+    state_.resize(6);
+    state_.setZero(); // Начальное состояние: [x=0, y=0, z=0, vx=0, vy=0, vz=0]
 
+    X[124][1] = state_(0) = ekf_x = a[15] = 5;
+    X[125][1] = state_(1) = ekf_y = a[16] = 5;
+    X[126][1] = state_(2) = ekf_z = a[17] = 10;
+    da[15] = 0;
+    da[16] = 0;
+    da[17] = 0;
 
 
     double dt = 0.01;
@@ -17,7 +26,7 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
 
     sen_uWave = new SensorMove();
     sen_uWave->readConfig("config.json");
-    sen_uWave->addPositionAUV(0,0,10);
+    sen_uWave->addPositionAUV(a[15],a[16],a[17]);
     sen_uWave->addPositionModem(10,10,10);
 
     senIMU = new IMUSensor(dt);
@@ -33,8 +42,8 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
         X[2][0]=K[32];
         this->tick(dt);
     });
-    resetModel();
-    timer.start(100);
+    // resetModel();
+    timer.start(10);
 
     m = 8.2;
     cv1[1] = 7.4; cv1[2] = 5.9; cv1[3] = 10.0;
@@ -65,11 +74,7 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     depth_limit=50;
     max_depth=50;
 
-    // Инициализация EKF
-    state_.resize(6);
-    state_.setZero(); // Начальное состояние: [x=0, y=0, z=0, vx=0, vy=0, vz=0]
-
-    covariance_ = Eigen::MatrixXd::Identity(6, 6) * 10.0; // Начальная неопределенность
+    covariance_ = Eigen::MatrixXd::Identity(6, 6) * 1000.0; // Начальная неопределенность
 
     F_.resize(6, 6);
     F_ << 1, 0, 0, dt, 0, 0,
@@ -82,11 +87,13 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     H_.resize(1, 6);
     H_ << 0, 0, 0, 0, 0, 0; // Обновится в correction()
 
-    covariance_ = Eigen::MatrixXd::Identity(6, 6) * 100.0; // Увеличьте начальную неопределенность
+    // timer.start(10); // 10 ms ≈ 0.01 sec (для Qt таймеров)
 
-    // В конструкторе SU_ROV:
-    Q_ = Eigen::MatrixXd::Identity(6, 6) * 0.01;  // Шум процесса (меньше = больше доверия модели)
-    R_ = Eigen::MatrixXd::Identity(1, 1) * 0.1;   // Шум измерений (меньше = больше доверия датчику)
+    covariance_ = Eigen::MatrixXd::Identity(6, 6) * 1000.0;
+
+    // Корректируем шумы (предположим, что измерения очень точные)
+    Q_ = Eigen::MatrixXd::Identity(6,6) * 0.01;  // Увеличиваем шум модели
+    R_ = Eigen::MatrixXd::Identity(1,1) * 0.01; // Уменьшаем шум измерений в 10 раз
 
     beacon_position_ << 10.0, 10.0, 10.0; // Пример координат маяка
     last_update_time_ = 0.0;
@@ -209,7 +216,7 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     da[7] = (1/Td) * (kd * (double)Upl - Ppl);  // передний нижний правый(1)
     da[8] = (1/Td) * (kd * (double)Upp - Ppp);  // передний нижний левый(2)
     da[9] = (1/Td) * (kd * (double)Usl - Psl);  // задний нижний левый(3)
-    da[10] = (1/Td) * (kd * (double)Usp - Psp); //задний нижний правый(4)
+    da[10] = (1/Td) * (kd * (double)Usp - Psp); //задний нижний правый(4)а
     da[11] = (1/Td) * (kd * (double)Uzl - Pzl); // передний верхний правый(5)
     da[12] = (1/Td) * (kd * (double)Uzp - Pzp); // передний верхний левый(6)
 
@@ -273,9 +280,7 @@ void SU_ROV::resetModel(){
 }
 
 void SU_ROV::tick(const float Ttimer){
-
-    // setTargetPoint(1,1);
-    // moveToPoint(Ttimer);
+    simulation_time_ += Ttimer; // Ttimer = 0.01
     double usilenie = 50000;
     BFS_DRK(10,0,0,1*usilenie,0,0);
     runge(X[50][0], X[60][0], X[70][0], X[80][0], X[90][0], X[100][0],Ttimer,Ttimer);
@@ -290,14 +295,20 @@ void SU_ROV::tick(const float Ttimer){
     double depth = senPressure->getOutput();
     double distance = sen_uWave->getOutput();
     state_(2) = depth; // Обновляем глубину в EKF
-    X[500][0] = distance;
-
+    X[102][0] = distance;
     // Прогнозирование состояния каждые 0.01 сек
     prediction(Ttimer);
 
     // Коррекция только при валидных измерениях
-    if (distance > 0 && check_measurement_validity(distance, Ttimer)) {
+    if (distance > 0/* && check_measurement_validity(distance, time_correction)*/) {
+
+        qDebug() << "correction";
         correction(distance);
+        time_correction =0;
+    }
+    else
+    {
+        time_correction +=Ttimer;
     }
 
     // Обновление глубины
@@ -313,51 +324,17 @@ void SU_ROV::tick(const float Ttimer){
 
     emit updateCoromAUVEkf(ekf_x, ekf_y);
     emit updateCoromAUVReal(x_global, y_global);
-    emit updateCircle(X[101][0]);
+    if (X[102][0]>0) emit updateCircle(X[102][0]);
+    emit updateVelocityVector_ekf(state_(3),state_(4));
+    emit updateVelocityVector_real(vx_global,vy_global);
 }
 
 bool SU_ROV::check_measurement_validity(double distance, double dt) {
-    // Рассчет положения по модели
-    Eigen::Vector3d AUV_position(state_(0), state_(1), state_(2));
-    Eigen::Vector3d beacon_pos(beacon_position_);
+    double innovation = distance - predicted_distance;
+    double innovation_cov = (H_ * covariance_ * H_.transpose() + R_)(0,0);
 
-    double model_distance = (AUV_position - beacon_pos).norm();
-    double max_delta = MAX_SPEED * dt * SAFETY_FACTOR*100;
-
-    qDebug() << "distance" << distance << "; model_distance" <<model_distance << "; max_delta" << max_delta;
-    qDebug() << "return"<< (fabs(distance - model_distance) <= max_delta);
-    // return fabs(distance - model_distance) <= max_delta;
-    return true;
-}
-
-void SU_ROV::integrate(double &input, double &output, double &prevOutput, double dt) {
-    output = prevOutput + dt*input;
-    prevOutput = output;
-}
-
-void SU_ROV::updateNavigation(double dt)
-{
-    // // Получение сырых данных с датчиков
-    // Eigen::Vector3d angular_rates(
-    //     X[67][0],  // X_rate
-    //     X[68][0],  // Y_rate
-    //     X[69][0]   // Z_rate
-    // );
-
-    // // Обновление навигационной системы
-    // navSystem->update(dt,
-    //                 Eigen::Vector3d(X[19][0], X[20][0], X[21][0]));
-    // double Z_rate = -1/cos(X[62][0]/57.3)*(-X[69][0]*cos(X[63][0]/57.3)-X[68][0]*sin(X[63][0]/57.3));
-    // // Интегрирование угловой скорости
-    // integrate(
-    //     Z_rate,
-    //     X[79][0],
-    //     X[91][0],
-    //     dt
-    // );
-
-    // Логирование
-    // qDebug() << "Estimated Position:" << navSystem.getEstimatedPosition().transpose();
+    // Проверка по хи-квадрат с 95% доверительным интервалом
+    return (innovation * innovation) < 5.991 * innovation_cov; // 5.991 для 2 степеней свободы
 }
 
 SU_ROV::~SU_ROV(){
