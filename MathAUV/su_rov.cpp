@@ -8,16 +8,27 @@
 
 SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
 {
+    // Eigen::MatrixXd st;
+    // st.resize(9);
+    // st.setZero();
+    X[124][1]  = ekf_x = a[15] = 5;
+    X[125][1]  = ekf_y = a[16] = 5;
+    X[126][1]  = ekf_z = a[17] = 10;
+    da[15] = 0;
+    da[16] = 0;
+    da[17] = 0;
+
+
+    beacon_position_ << 10.0, 10.0, 10.0; // Пример координат маяка
+    last_update_time_ = 0.0;
+    ekf_ = new NavigationEKF(beacon_position_);
+    ekf_->setState(ekf_x,ekf_y,ekf_z, 0);
+
     // Инициализация EKF
     state_.resize(6);
     state_.setZero(); // Начальное состояние: [x=0, y=0, z=0, vx=0, vy=0, vz=0]
 
-    X[124][1] = state_(0) = ekf_x = a[15] = 5;
-    X[125][1] = state_(1) = ekf_y = a[16] = 5;
-    X[126][1] = state_(2) = ekf_z = a[17] = 10;
-    da[15] = 0;
-    da[16] = 0;
-    da[17] = 0;
+
 
 
     double dt = 0.01;
@@ -95,8 +106,7 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     Q_ = Eigen::MatrixXd::Identity(6,6) * 0.01;  // Увеличиваем шум модели
     R_ = Eigen::MatrixXd::Identity(1,1) * 0.01; // Уменьшаем шум измерений в 10 раз
 
-    beacon_position_ << 10.0, 10.0, 10.0; // Пример координат маяка
-    last_update_time_ = 0.0;
+
 }
 
     void SU_ROV::model(const float Upl,const float Upp,const float Usl,const float Usp, const float Uzl, const float Uzp) {
@@ -290,42 +300,88 @@ void SU_ROV::tick(const float Ttimer){
     senIMU->update(Gamma_g, Tetta_g,Psi_g,true_angular_rates,true_linear_vel);
     senPressure->update(z_global,Ttimer);
 
-    // Получение данных с датчиков
-    IMUOutput imu_data = senIMU->getOutput();
+
+    // 1. Получение данных с датчиков
+    auto imu_data = senIMU->getOutput();
     double depth = senPressure->getOutput();
     double distance = sen_uWave->getOutput();
-    state_(2) = depth; // Обновляем глубину в EKF
+
+    // 2. Прогноз фильтра
+    X[151][0] = imu_data.angularRates(2);
+    ekf_->predict(Ttimer, imu_data.acceleration, imu_data.orientation(2));
+
+    // Коррекция по расстоянию до маяка
+    if (distance > 0) {
+        ekf_->correct(distance);
+    }
+
+    // 4. Коррекция глубины по датчику давления
+    // Eigen::Vector3d pos = ekf_->getPosition();
+    // pos.z() = depth; // Предполагаем, что датчик давления дает точную глубину
+    // Коррекция глубины
+    ekf_->correctDepth(depth);
+
+    // 5. Отправка обновлений
+    // emit positionUpdated(pos.x(), pos.y(), pos.z());
+    // // // Получение данных с датчиков
+    // IMUOutput imu_data = senIMU->getOutput();
+    // double depth = senPressure->getOutput();
+    // double distance = sen_uWave->getOutput();
+    // // state_(2) = depth; // Обновляем глубину в EKF
     X[102][0] = distance;
-    // Прогнозирование состояния каждые 0.01 сек
-    prediction(Ttimer);
+    // // // Прогнозирование состояния каждые 0.01 сек
+    // // prediction(Ttimer);
+    // // 1. Получение данных от датчиков
+    // Eigen::Vector3d accel = imu_data.acceleration;
+    // Eigen::Vector3d gyro = imu_data.angularRates;
+    // Eigen::Vector3d pose_measured = imu_data.coordinate;
+    // Eigen::Vector3d orientation_measured = imu_data.coordinate;
 
-    // Коррекция только при валидных измерениях
-    if (distance > 0/* && check_measurement_validity(distance, time_correction)*/) {
+    // // 2. Прогноз фильтра
+    // navFilter_->predict(Ttimer, accel, gyro);
 
-        qDebug() << "correction";
-        correction(distance);
-        time_correction =0;
-    }
-    else
-    {
-        time_correction +=Ttimer;
-    }
+    // 3. Коррекция фильтра
+    // navFilter_->correct(pose_measured, orientation_measured);
 
-    // Обновление глубины
-    state_(2) = depth;
+    // 4. Обновление интерфейса
+    updateNavigationDisplay();
 
-    // Обновляем только EKF-координаты
-    ekf_x = state_(0);
-    ekf_y = state_(1);
-    ekf_z = state_(2);
-    X[141][0] = ekf_x;
-    X[142][0] = ekf_y;
-    X[143][0] = ekf_z;
+    // // Коррекция только при валидных измерениях
+    // if (distance > 0/* && check_measurement_validity(distance, time_correction)*/) {
 
-    emit updateCoromAUVEkf(ekf_x, ekf_y);
+    //     qDebug() << "correction";
+    //     correction(distance);
+    //     time_correction =0;
+    // }
+    // else
+    // {
+    //     time_correction +=Ttimer;
+    // }
+
+    // // Обновление глубины
+    // state_(2) = depth;
+
+    // // Обновляем только EKF-координаты
+    // ekf_x = state_(0);
+    // ekf_y = state_(1);
+    // ekf_z = state_(2);
+    // X[141][0] = ekf_x;
+    // X[142][0] = ekf_y;
+    // X[143][0] = ekf_z;
+
+    // emit updateCoromAUVEkf(ekf_x, ekf_y);
+    // emit updateCoromAUVReal(x_global, y_global);
+    // if (X[102][0]>0) emit updateCircle(X[102][0]);
+    // emit updateVelocityVector_ekf(state_(3),state_(4));
+    // emit updateVelocityVector_real(vx_global,vy_global);
+}
+
+void SU_ROV::updateNavigationDisplay() {
+    Eigen::VectorXd state = ekf_->getState();
+    emit updateCoromAUVEkf(state[0], state[1]);
     emit updateCoromAUVReal(x_global, y_global);
     if (X[102][0]>0) emit updateCircle(X[102][0]);
-    emit updateVelocityVector_ekf(state_(3),state_(4));
+    emit updateVelocityVector_ekf(state[3], state[4]);
     emit updateVelocityVector_real(vx_global,vy_global);
 }
 

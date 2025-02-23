@@ -6,10 +6,10 @@
 #include "qkx_coeffs.h"
 #include "kx_protocol.h"
 #include <QTimer>
-#include "../Navigation/NavigationSystem.h"
-#include "sensormove.h"
-#include "SensorIMU.h"
-#include "SensorPressure.h"
+#include "../Navigation/navigationekf.h"
+#include "../Sensor/sensormove.h"
+#include "../Sensor/SensorIMU.h"
+#include "../Sensor/SensorPressure.h"
 
 #define ANPA_MOD_CNT 24
 
@@ -126,7 +126,6 @@ protected:
     double m_circleCenterX = 0.0;    ///< X-центр окружности
     double m_circleCenterY = 0.0;    ///< Y-центр окружности
 
-    NavigationSystem *navSystem = nullptr;
     SensorMove * sen_uWave = nullptr; //подключение гидроакустики
     PressureSensor * senPressure = nullptr; //подключение датчика давления
     IMUSensor * senIMU = nullptr; //подключение бсо
@@ -244,6 +243,8 @@ private:
 private:
     double simulation_time_ = 0.0; // Текущее время моделирования
     double last_correction_time_ = 0.0; // Время последней коррекции
+    NavigationEKF* ekf_;     ///< Экземпляр навигационного фильтра
+    void updateNavigationDisplay();
 
 signals:
     void updateCoromAUVReal(double x, double y);
@@ -251,6 +252,8 @@ signals:
     void updateCircle(double r);
     void updateVelocityVector_ekf(double vx, double vy);
     void updateVelocityVector_real(double vx, double vy);
+    void positionUpdated(double x, double y, double z);
+    void orientationUpdated(double phi, double theta, double psi);
 
 };
 
