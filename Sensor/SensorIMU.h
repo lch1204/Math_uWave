@@ -83,7 +83,7 @@ public:
         // Для гироскопа смещение можно принять равным 0
         gyro_bias.setZero();
         // Смещения акселерометра (мат. ожидание по осям)
-        acc_bias << 0.013, 0.014, 0.0009;
+        acc_bias << 0.013, 0.014, 0.019;
     }
 
     ~IMUSensor() {
@@ -194,6 +194,12 @@ public:
         imu_output.coordinate = Eigen::Vector3d(X[124][0], X[125][0], X[126][0]);
 
     }
+    void updateCoordinate(double x, double y, double z)
+    {
+        X[124][1] =x;
+        X[125][1] =y;
+        X[126][1] =z;
+    };
 
     void integrate(double &input, double &output, double &prevOutput, double dt)
     {
@@ -260,6 +266,7 @@ private:
     // Для вычисления ускорения по разности линейных скоростей
     Eigen::Vector3d prev_linear_vel;
     bool first_update;
+
 
     // Выходные данные измерений
     IMUOutput imu_output;

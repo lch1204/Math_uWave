@@ -54,7 +54,7 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
         this->tick(dt);
     });
     // resetModel();
-    timer.start(10);
+    timer.start(100);
 
     m = 8.2;
     cv1[1] = 7.4; cv1[2] = 5.9; cv1[3] = 10.0;
@@ -84,29 +84,6 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     Td = 0.15; //постоянная времени движителей
     depth_limit=50;
     max_depth=50;
-
-    covariance_ = Eigen::MatrixXd::Identity(6, 6) * 1000.0; // Начальная неопределенность
-
-    F_.resize(6, 6);
-    F_ << 1, 0, 0, dt, 0, 0,
-        0, 1, 0, 0, dt, 0,
-        0, 0, 1, 0, 0, dt,
-        0, 0, 0, 1, 0, 0,
-        0, 0, 0, 0, 1, 0,
-        0, 0, 0, 0, 0, 1;
-
-    H_.resize(1, 6);
-    H_ << 0, 0, 0, 0, 0, 0; // Обновится в correction()
-
-    // timer.start(10); // 10 ms ≈ 0.01 sec (для Qt таймеров)
-
-    covariance_ = Eigen::MatrixXd::Identity(6, 6) * 1000.0;
-
-    // Корректируем шумы (предположим, что измерения очень точные)
-    Q_ = Eigen::MatrixXd::Identity(6,6) * 0.01;  // Увеличиваем шум модели
-    R_ = Eigen::MatrixXd::Identity(1,1) * 0.01; // Уменьшаем шум измерений в 10 раз
-
-
 }
 
     void SU_ROV::model(const float Upl,const float Upp,const float Usl,const float Usp, const float Uzl, const float Uzp) {
@@ -223,7 +200,7 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     da[6] = (1/cos(a[5])) * (a[19] * sin(a[4]) + cos(a[4]) * (a[20])) + Vt[6]; //производная крена
     // Из матмодели имеем
     //K_двi - усредненный коэффициент усиления i-го движителя; T_двi=J_i/K_v1i  – наибольшее значение постоянной времени i-го ВМА
-    da[7] = (1/Td) * (kd * (double)Upl - Ppl);  // передний нижний правый(1)
+    da[7] = (1/Td) * (kd * (double)Upl - Ppl);  // передний нижний правый(1)simulation_time_
     da[8] = (1/Td) * (kd * (double)Upp - Ppp);  // передний нижний левый(2)
     da[9] = (1/Td) * (kd * (double)Usl - Psl);  // задний нижний левый(3)
     da[10] = (1/Td) * (kd * (double)Usp - Psp); //задний нижний правый(4)а
@@ -312,68 +289,21 @@ void SU_ROV::tick(const float Ttimer){
 
     // Коррекция по расстоянию до маяка
     if (distance > 0) {
-        ekf_->correct(distance);
+        double time = simulation_time_ - last_correction_time_;
+        qDebug() << "time" << time;
+        (ekf_->correct(distance, time, 2));
+            last_correction_time_ = simulation_time_;
     }
 
     // 4. Коррекция глубины по датчику давления
-    // Eigen::Vector3d pos = ekf_->getPosition();
-    // pos.z() = depth; // Предполагаем, что датчик давления дает точную глубину
-    // Коррекция глубины
     ekf_->correctDepth(depth);
 
-    // 5. Отправка обновлений
-    // emit positionUpdated(pos.x(), pos.y(), pos.z());
-    // // // Получение данных с датчиков
-    // IMUOutput imu_data = senIMU->getOutput();
-    // double depth = senPressure->getOutput();
-    // double distance = sen_uWave->getOutput();
-    // // state_(2) = depth; // Обновляем глубину в EKF
     X[102][0] = distance;
-    // // // Прогнозирование состояния каждые 0.01 сек
-    // // prediction(Ttimer);
-    // // 1. Получение данных от датчиков
-    // Eigen::Vector3d accel = imu_data.acceleration;
-    // Eigen::Vector3d gyro = imu_data.angularRates;
-    // Eigen::Vector3d pose_measured = imu_data.coordinate;
-    // Eigen::Vector3d orientation_measured = imu_data.coordinate;
-
-    // // 2. Прогноз фильтра
-    // navFilter_->predict(Ttimer, accel, gyro);
-
-    // 3. Коррекция фильтра
-    // navFilter_->correct(pose_measured, orientation_measured);
 
     // 4. Обновление интерфейса
     updateNavigationDisplay();
-
-    // // Коррекция только при валидных измерениях
-    // if (distance > 0/* && check_measurement_validity(distance, time_correction)*/) {
-
-    //     qDebug() << "correction";
-    //     correction(distance);
-    //     time_correction =0;
-    // }
-    // else
-    // {
-    //     time_correction +=Ttimer;
-    // }
-
-    // // Обновление глубины
-    // state_(2) = depth;
-
-    // // Обновляем только EKF-координаты
-    // ekf_x = state_(0);
-    // ekf_y = state_(1);
-    // ekf_z = state_(2);
-    // X[141][0] = ekf_x;
-    // X[142][0] = ekf_y;
-    // X[143][0] = ekf_z;
-
-    // emit updateCoromAUVEkf(ekf_x, ekf_y);
-    // emit updateCoromAUVReal(x_global, y_global);
-    // if (X[102][0]>0) emit updateCircle(X[102][0]);
-    // emit updateVelocityVector_ekf(state_(3),state_(4));
-    // emit updateVelocityVector_real(vx_global,vy_global);
+    Eigen::VectorXd state = ekf_->getState();
+    senIMU->updateCoordinate(state[0], state[1], state[2]);
 }
 
 void SU_ROV::updateNavigationDisplay() {

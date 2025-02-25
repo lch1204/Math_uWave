@@ -20,7 +20,7 @@ public:
                  const Eigen::Vector3d& linear_acc,
                  double angular_vel_z);
 
-    void correct(double measured_distance);
+    bool correct(double measured_distance, double delta_t, double max_speed = 3);
     void correctDepth(double measured_z);
     void setState(double x, double y, double z, double psi);
 

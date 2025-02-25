@@ -10,12 +10,16 @@ NavigationEKF::NavigationEKF(const Eigen::Vector3d& beacon_position)
 
     // Настройка шумов (примерные значения)
     Q_ = Eigen::MatrixXd::Zero(STATE_DIM, STATE_DIM);
-    Q_.diagonal() << 0.1, 0.1, 0.1,   // Позиция (x,y,z)
-        0.5, 0.5, 0.5,    // Скорости в связанной СК (vx,vy,vz)
-        0.01;             // Курс (psi)
+    Q_.diagonal() <<
+        /* Позиция (x,y,z) */ 6.7e-7, 3.4e-6, 2.0e-8,
+        /* Скорости (vx,vy,vz) */ 1.34e-4, 3.4e-4, 2.0e-5,
+        /* Курс (ψ) */ 1.0e-4;
 
-    R_distance_ = Eigen::MatrixXd::Identity(1,1) * 0.5;
-    R_depth_ = Eigen::MatrixXd::Identity(1,1) * 0.1;
+    // Для глубины:
+    R_depth_ = Eigen::MatrixXd::Identity(1,1) * 2.25;
+
+    // Для расстояния до маяка:
+    R_distance_ = Eigen::MatrixXd::Identity(1,1) * 0.3;
 }
 
 void NavigationEKF::predict(double dt,
@@ -44,30 +48,48 @@ void NavigationEKF::predict(double dt,
     covariance_ = F * covariance_ * F.transpose() + Q_;
 }
 
-void NavigationEKF::correct(double measured_distance) {
+bool NavigationEKF::correct(double measured_distance, double delta_t, double max_speed) {
+    // 1. Вычисление разности между положением аппарата и маяком
     Eigen::Vector3d delta = state_.segment<3>(0) - beacon_pos_;
-    double predicted_distance = delta.norm();
+    double predicted_distance = delta.norm(); //вычисляем длину
+    if(predicted_distance < 1e-6)
+        return false;
 
-    if(predicted_distance < 1e-6) return;
+    // 2. Вычисление инновации
+    double innovation = measured_distance - predicted_distance;
 
-    // Матрица Якоби измерений (только глобальные координаты)
+    // 3. Вычисление максимально допустимого перемещения
+    double max_innovation = max_speed * delta_t;
+
+    // 4. Ограничение (гейтеринг) инновации
+    if(std::fabs(innovation) > max_innovation) {
+        // Можно либо просто обрезать значение инновации:
+        innovation = (innovation > 0) ? max_innovation : -max_innovation;
+        // Либо можно отвергнуть измерение, если инновация слишком велика.
+        // В данном примере мы просто ограничиваем поправку.
+        return false;
+    }
+
+    // 5. Вычисление матрицы Якоби H (учитывается только влияние глобальных координат)
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(1, STATE_DIM);
     H << delta.x()/predicted_distance,
         delta.y()/predicted_distance,
         delta.z()/predicted_distance,
         0, 0, 0, 0;
 
-    // Коэффициент Калмана
+    // 6. Расчет S и коэффициента Калмана K
     Eigen::MatrixXd S = H * covariance_ * H.transpose() + R_distance_;
-    Eigen::MatrixXd K = covariance_ * H.transpose() * S.inverse();
+    Eigen::MatrixXd K_gain = covariance_ * H.transpose() * S.inverse();
 
-    // Коррекция только глобальных координат
-    state_.head<3>() += K.block<3,1>(0,0) * (measured_distance - predicted_distance);
+    // 7. Коррекция состояния с ограниченной инновацией
+    state_.head<3>() += K_gain.block<3,1>(0,0) * innovation;
 
-    // Обновление ковариации
+    // 8. Обновление ковариационной матрицы
     Eigen::MatrixXd I = Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
-    covariance_ = (I - K * H) * covariance_;
+    covariance_ = (I - K_gain * H) * covariance_;
+    return true;
 }
+
 
 void NavigationEKF::correctDepth(double measured_z) {
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(1, STATE_DIM);
