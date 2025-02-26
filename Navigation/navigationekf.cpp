@@ -6,7 +6,7 @@ NavigationEKF::NavigationEKF(const Eigen::Vector3d& beacon_position)
     state_.resize(STATE_DIM);
     state_.setZero();
 
-    covariance_ = Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
+    covariance_ = Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM) * 0.1;
 
     // Настройка шумов (примерные значения)
     Q_ = Eigen::MatrixXd::Zero(STATE_DIM, STATE_DIM);
@@ -16,10 +16,10 @@ NavigationEKF::NavigationEKF(const Eigen::Vector3d& beacon_position)
         /* Курс (ψ) */ 1.0e-4;
 
     // Для глубины:
-    R_depth_ = Eigen::MatrixXd::Identity(1,1) * 2.25;
+    R_depth_ = Eigen::MatrixXd::Identity(1,1) * 0.1;
 
     // Для расстояния до маяка:
-    R_distance_ = Eigen::MatrixXd::Identity(1,1) * 0.3;
+    R_distance_ = Eigen::MatrixXd::Identity(1,1) * 0.1;
 }
 
 void NavigationEKF::predict(double dt,
@@ -67,7 +67,6 @@ bool NavigationEKF::correct(double measured_distance, double delta_t, double max
         innovation = (innovation > 0) ? max_innovation : -max_innovation;
         // Либо можно отвергнуть измерение, если инновация слишком велика.
         // В данном примере мы просто ограничиваем поправку.
-        return false;
     }
 
     // 5. Вычисление матрицы Якоби H (учитывается только влияние глобальных координат)

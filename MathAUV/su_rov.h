@@ -255,6 +255,10 @@ signals:
     void positionUpdated(double x, double y, double z);
     void orientationUpdated(double phi, double theta, double psi);
 
+    void updateX(double X, double ekfX, double t_sim);
+    void updateY(double Y, double ekfY, double t_sim);
+    void updateZ(double Z, double ekfZ, double t_sim);
+
 };
 
 #endif // SU_ROV_H

@@ -53,6 +53,7 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = ../../form.cpp \
+		../../graph.cpp \
 		../../main.cpp \
 		../../Navigation/navigationekf.cpp \
 		../../readerjson.cpp \
@@ -62,12 +63,16 @@ SOURCES       = ../../form.cpp \
 		../../MathAUV/kx_protocol.cpp \
 		../../MathAUV/qkx_coeffs.cpp \
 		../../MathAUV/qpiconfig.cpp \
-		../../MathAUV/su_rov.cpp moc_form.cpp \
+		../../MathAUV/su_rov.cpp \
+		../../setvariable_t.cpp moc_form.cpp \
+		moc_graph.cpp \
+		moc_setvariable_t.cpp \
 		moc_configdata.cpp \
 		moc_kx_protocol.cpp \
 		moc_qkx_coeffs.cpp \
 		moc_su_rov.cpp
 OBJECTS       = form.o \
+		graph.o \
 		main.o \
 		navigationekf.o \
 		readerjson.o \
@@ -78,7 +83,10 @@ OBJECTS       = form.o \
 		qkx_coeffs.o \
 		qpiconfig.o \
 		su_rov.o \
+		setvariable_t.o \
 		moc_form.o \
+		moc_graph.o \
+		moc_setvariable_t.o \
 		moc_configdata.o \
 		moc_kx_protocol.o \
 		moc_qkx_coeffs.o \
@@ -148,7 +156,6 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf \
-		../../.qmake.stash \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
@@ -174,9 +181,11 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		../../Sensor/SensorPressure.h \
 		../../form.h \
 		../../Navigation/navigationekf.h \
+		../../graph.h \
 		../../readerjson.h \
 		../../Sensor/sensormove.h \
 		../../Sensor/signalpropagation.h \
+		../../setvariable_t.h \
 		../../stucturs.h \
 		../../Sensor/sensor_uwave.h \
 		../../MathAUV/configdata.h \
@@ -184,6 +193,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		../../MathAUV/qkx_coeffs.h \
 		../../MathAUV/qpiconfig.h \
 		../../MathAUV/su_rov.h ../../form.cpp \
+		../../graph.cpp \
 		../../main.cpp \
 		../../Navigation/navigationekf.cpp \
 		../../readerjson.cpp \
@@ -193,7 +203,8 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		../../MathAUV/kx_protocol.cpp \
 		../../MathAUV/qkx_coeffs.cpp \
 		../../MathAUV/qpiconfig.cpp \
-		../../MathAUV/su_rov.cpp
+		../../MathAUV/su_rov.cpp \
+		../../setvariable_t.cpp
 QMAKE_TARGET  = Math_uWave
 DESTDIR       = ../../config/
 TARGET        = ../../config/Math_uWave
@@ -202,7 +213,7 @@ TARGET        = ../../config/Math_uWave
 first: all
 ####### Build rules
 
-../../config/Math_uWave: ui_form.h $(OBJECTS)  
+../../config/Math_uWave: ui_form.h ui_graph.h ui_setvariable_t.h $(OBJECTS)  
 	@test -d ../../config/ || mkdir -p ../../config/
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
@@ -271,7 +282,6 @@ Makefile: ../../Math_uWave.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/q
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf \
-		.qmake.stash \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
@@ -360,7 +370,6 @@ Makefile: ../../Math_uWave.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/q
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf:
-.qmake.stash:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf:
@@ -398,9 +407,9 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../../Sensor/SensorIMU.h ../../Sensor/SensorPressure.h ../../form.h ../../Navigation/navigationekf.h ../../readerjson.h ../../Sensor/sensormove.h ../../Sensor/signalpropagation.h ../../stucturs.h ../../Sensor/sensor_uwave.h ../../MathAUV/configdata.h ../../MathAUV/kx_protocol.h ../../MathAUV/qkx_coeffs.h ../../MathAUV/qpiconfig.h ../../MathAUV/su_rov.h $(DISTDIR)/
-	$(COPY_FILE) --parents ../../form.cpp ../../main.cpp ../../Navigation/navigationekf.cpp ../../readerjson.cpp ../../Sensor/sensormove.cpp ../../Sensor/signalpropagation.cpp ../../MathAUV/configdata.cpp ../../MathAUV/kx_protocol.cpp ../../MathAUV/qkx_coeffs.cpp ../../MathAUV/qpiconfig.cpp ../../MathAUV/su_rov.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../../form.ui $(DISTDIR)/
+	$(COPY_FILE) --parents ../../Sensor/SensorIMU.h ../../Sensor/SensorPressure.h ../../form.h ../../Navigation/navigationekf.h ../../graph.h ../../readerjson.h ../../Sensor/sensormove.h ../../Sensor/signalpropagation.h ../../setvariable_t.h ../../stucturs.h ../../Sensor/sensor_uwave.h ../../MathAUV/configdata.h ../../MathAUV/kx_protocol.h ../../MathAUV/qkx_coeffs.h ../../MathAUV/qpiconfig.h ../../MathAUV/su_rov.h $(DISTDIR)/
+	$(COPY_FILE) --parents ../../form.cpp ../../graph.cpp ../../main.cpp ../../Navigation/navigationekf.cpp ../../readerjson.cpp ../../Sensor/sensormove.cpp ../../Sensor/signalpropagation.cpp ../../MathAUV/configdata.cpp ../../MathAUV/kx_protocol.cpp ../../MathAUV/qkx_coeffs.cpp ../../MathAUV/qpiconfig.cpp ../../MathAUV/su_rov.cpp ../../setvariable_t.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../../form.ui ../../graph.ui ../../setvariable_t.ui $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -432,14 +441,26 @@ compiler_moc_predefs_clean:
 moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 	g++ -pipe -g -std=gnu++1z -Wall -Wextra -dM -E -o moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: moc_form.cpp moc_configdata.cpp moc_kx_protocol.cpp moc_qkx_coeffs.cpp moc_su_rov.cpp
+compiler_moc_header_make_all: moc_form.cpp moc_graph.cpp moc_setvariable_t.cpp moc_configdata.cpp moc_kx_protocol.cpp moc_qkx_coeffs.cpp moc_su_rov.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_form.cpp moc_configdata.cpp moc_kx_protocol.cpp moc_qkx_coeffs.cpp moc_su_rov.cpp
+	-$(DEL_FILE) moc_form.cpp moc_graph.cpp moc_setvariable_t.cpp moc_configdata.cpp moc_kx_protocol.cpp moc_qkx_coeffs.cpp moc_su_rov.cpp
 moc_form.cpp: ../../form.h \
 		ui_form.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../form.h -o moc_form.cpp
+
+moc_graph.cpp: ../../graph.h \
+		ui_graph.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../graph.h -o moc_graph.cpp
+
+moc_setvariable_t.cpp: ../../setvariable_t.h \
+		ui_setvariable_t.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../setvariable_t.h -o moc_setvariable_t.cpp
 
 moc_configdata.cpp: ../../MathAUV/configdata.h \
 		moc_predefs.h \
@@ -765,12 +786,22 @@ compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
 compiler_moc_source_make_all:
 compiler_moc_source_clean:
-compiler_uic_make_all: ui_form.h
+compiler_uic_make_all: ui_form.h ui_graph.h ui_setvariable_t.h
 compiler_uic_clean:
-	-$(DEL_FILE) ui_form.h
+	-$(DEL_FILE) ui_form.h ui_graph.h ui_setvariable_t.h
 ui_form.h: ../../form.ui \
 		/usr/lib/qt5/bin/uic
 	/usr/lib/qt5/bin/uic ../../form.ui -o ui_form.h
+
+ui_graph.h: ../../graph.ui \
+		/usr/lib/qt5/bin/uic \
+		../../setvariable_t.h \
+		ui_setvariable_t.h
+	/usr/lib/qt5/bin/uic ../../graph.ui -o ui_graph.h
+
+ui_setvariable_t.h: ../../setvariable_t.ui \
+		/usr/lib/qt5/bin/uic
+	/usr/lib/qt5/bin/uic ../../setvariable_t.ui -o ui_setvariable_t.h
 
 compiler_yacc_decl_make_all:
 compiler_yacc_decl_clean:
@@ -785,6 +816,10 @@ compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_ui
 form.o: ../../form.cpp ../../form.h \
 		ui_form.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o form.o ../../form.cpp
+
+graph.o: ../../graph.cpp ../../graph.h \
+		ui_graph.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o graph.o ../../graph.cpp
 
 main.o: ../../main.cpp ../../MathAUV/su_rov.h \
 		../../MathAUV/qkx_coeffs.h \
@@ -1086,7 +1121,9 @@ main.o: ../../main.cpp ../../MathAUV/su_rov.h \
 		../../Sensor/SensorIMU.h \
 		../../Sensor/SensorPressure.h \
 		../../form.h \
-		ui_form.h
+		ui_form.h \
+		../../graph.h \
+		ui_graph.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../../main.cpp
 
 navigationekf.o: ../../Navigation/navigationekf.cpp ../../Navigation/navigationekf.h \
@@ -1802,8 +1839,18 @@ su_rov.o: ../../MathAUV/su_rov.cpp ../../MathAUV/su_rov.h \
 		../../Sensor/SensorPressure.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o su_rov.o ../../MathAUV/su_rov.cpp
 
+setvariable_t.o: ../../setvariable_t.cpp ../../setvariable_t.h \
+		ui_setvariable_t.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o setvariable_t.o ../../setvariable_t.cpp
+
 moc_form.o: moc_form.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_form.o moc_form.cpp
+
+moc_graph.o: moc_graph.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_graph.o moc_graph.cpp
+
+moc_setvariable_t.o: moc_setvariable_t.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_setvariable_t.o moc_setvariable_t.cpp
 
 moc_configdata.o: moc_configdata.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_configdata.o moc_configdata.cpp

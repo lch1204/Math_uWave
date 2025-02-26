@@ -7,6 +7,7 @@ CONFIG += c++17 cmdline
 
 SOURCES += \
         form.cpp \
+        graph.cpp \
         main.cpp \
         Navigation/navigationekf.cpp \
         readerjson.cpp \
@@ -16,16 +17,19 @@ SOURCES += \
         MathAUV/kx_protocol.cpp \
         MathAUV/qkx_coeffs.cpp \
         MathAUV/qpiconfig.cpp \
-        MathAUV/su_rov.cpp
+        MathAUV/su_rov.cpp \
+        setvariable_t.cpp
 
 HEADERS += \
     Sensor/SensorIMU.h \
     Sensor/SensorPressure.h \
     form.h \
     Navigation/navigationekf.h \
+    graph.h \
     readerjson.h \
     Sensor/sensormove.h \
     Sensor/signalpropagation.h \
+    setvariable_t.h \
     stucturs.h \
     Sensor/sensor_uwave.h \
     MathAUV/configdata.h \
@@ -44,4 +48,6 @@ target.path = $$PWD/config
 INSTALLS += target
 
 FORMS += \
-    form.ui
+    form.ui \
+    graph.ui \
+    setvariable_t.ui

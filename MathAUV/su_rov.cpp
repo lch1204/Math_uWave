@@ -313,6 +313,9 @@ void SU_ROV::updateNavigationDisplay() {
     if (X[102][0]>0) emit updateCircle(X[102][0]);
     emit updateVelocityVector_ekf(state[3], state[4]);
     emit updateVelocityVector_real(vx_global,vy_global);
+    emit updateX(x_global, state[0], simulation_time_);
+    emit updateY(y_global, state[1], simulation_time_);
+    emit updateZ(z_global, state[2], simulation_time_);
 }
 
 bool SU_ROV::check_measurement_validity(double distance, double dt) {
