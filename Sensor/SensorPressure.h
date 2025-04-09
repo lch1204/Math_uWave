@@ -15,7 +15,7 @@ public:
      * @param tau Постоянная времени звена (задержка датчика).
      * @param ma_window_size Размер окна для скользящего среднего фильтра.
      */
-    PressureSensor(double noise_std = 1.5, double resolution = 0.01, double tau = 0.1, int ma_window_size = 5)
+    PressureSensor(double measured_depth = 0, double noise_std = 1.5, double resolution = 0.01, double tau = 0.1, int ma_window_size = 5)
         : noise_std(noise_std),
           resolution(resolution),
           tau(tau),

@@ -1,12 +1,22 @@
 #ifndef STUCTURS_H
 #define STUCTURS_H
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
 using namespace std;
 
 //Содержит все структуры данных
+
+
+// Типы датчиков с явным указанием диапазона
+enum class SensorType : uint8_t {
+    IMU     = 0,    // Инерциальный блок
+    DEPTH   = 1,    // Датчик давления
+    HYDRO   = 2,    // Гидроакустика
+    GPS     = 3     // Резерв для будущих датчиков
+};
 
 struct HydroMeasurement {
     double distance;

@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry> // Для AngleAxisd и преобразований
 #include <cmath>
+#include <QTime>
 
 extern double X[2000][2];
 extern QVector<double> K;
@@ -41,6 +42,7 @@ struct IMUOutput {
     Eigen::Vector3d acceleration;  // ускорения линейные
     Eigen::Vector3d speed;  // скорость
     Eigen::Vector3d coordinate;  // координата
+    Eigen::Vector3d timestamp;  // координата
 };
 
 //
@@ -56,15 +58,24 @@ public:
     IMUSensor(double dt = 0.01, double resolution = 0.01)
         : dt(dt), resolution(resolution), gen(rd()),
         // для измерений углов ориентации задаём шум по СКО (крен: 0.27, дифферент: 0.2, курс: 0.27)
-        noise_dist_orientation_roll(0.0, 0.27),
-        noise_dist_orientation_pitch(0.0, 0.2),
-        noise_dist_orientation_yaw(0.0, 0.27),
+        // noise_dist_orientation_roll(0.0, 0.27),
+        // noise_dist_orientation_pitch(0.0, 0.2),
+        // noise_dist_orientation_yaw(0.0, 0.27),
+        // // для гироскопа можно задать относительно малый шум (например, 0.01)
+        // noise_dist_gyro(0.0, 0.01),
+        // // для акселерометра (СКО по оx: 0.0134, по oy: 0.034, по oz: 0.998)
+        // noise_dist_acc_x(0.0, 0.0134),
+        // noise_dist_acc_y(0.0, 0.034),
+        // noise_dist_acc_z(0.0, 0.002),
+        noise_dist_orientation_roll(0.0, 0.0),
+        noise_dist_orientation_pitch(0.0, 0.0),
+        noise_dist_orientation_yaw(0.0, 0.0),
         // для гироскопа можно задать относительно малый шум (например, 0.01)
-        noise_dist_gyro(0.0, 0.01),
+        noise_dist_gyro(0.0, 0.00),
         // для акселерометра (СКО по оx: 0.0134, по oy: 0.034, по oz: 0.998)
-        noise_dist_acc_x(0.0, 0.0134),
-        noise_dist_acc_y(0.0, 0.034),
-        noise_dist_acc_z(0.0, 0.002),
+        noise_dist_acc_x(0.0, 0.00),
+        noise_dist_acc_y(0.0, 0.00),
+        noise_dist_acc_z(0.0, 0.00),
         // инициализируем фильтры для измерения ориентации
         roll_filter(0.006472, -0.9411, 0.01618, 0.03236, 0.01618),
         pitch_filter(0.006472, -0.9411, 0.01618, 0.03236, 0.01618),
@@ -79,11 +90,13 @@ public:
         prev_linear_vel.setZero();
         // Смещения для измерения ориентации (мат. ожидание)
         // крен = 0.1, дифферент = 0.08, курс считаем смещённым на 0
-        orientation_bias << 0.1, 0.08, 0.0;
+        // orientation_bias << 0.1, 0.08, 0.0;
+        orientation_bias << 0.0, 0.00, 0.0;
         // Для гироскопа смещение можно принять равным 0
         gyro_bias.setZero();
         // Смещения акселерометра (мат. ожидание по осям)
-        acc_bias << 0.013, 0.014, 0.019;
+        // acc_bias << 0.013, 0.014, 0.019;
+        acc_bias << 0.0, 0.0, 0.0;
     }
 
     ~IMUSensor() {
@@ -194,11 +207,12 @@ public:
         imu_output.coordinate = Eigen::Vector3d(X[124][0], X[125][0], X[126][0]);
 
     }
-    void updateCoordinate(double x, double y, double z)
+    Eigen::VectorXd updateCoordinate(double x, double y, double z)
     {
-        X[124][1] =x;
-        X[125][1] =y;
-        X[126][1] =z;
+        // Прямое обновление состояния EKF
+        Eigen::VectorXd new_state(7);
+        new_state << x, y, z, 0, 0, 0, 0; // Обновляем только позицию
+        return new_state;
     };
 
     void integrate(double &input, double &output, double &prevOutput, double dt)
@@ -209,12 +223,14 @@ public:
 
     // Возвращает структуру с текущими измерениями
     IMUOutput getOutput() const {
+        // imu_output.timestamp.ad time_sm;
         return imu_output;
     }
 
 private:
     double dt;         // шаг дискретизации
     double resolution; // квантование (0.01)
+    double time_sm = 0;
 
     // Генератор случайных чисел
     std::random_device rd;

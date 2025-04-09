@@ -22,14 +22,14 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     beacon_position_ << 10.0, 10.0, 10.0; // Пример координат маяка
     last_update_time_ = 0.0;
     ekf_ = new NavigationEKF(beacon_position_);
-    ekf_->setState(ekf_x,ekf_y,ekf_z, 0);
-
     // Инициализация EKF
     state_.resize(6);
     state_.setZero(); // Начальное состояние: [x=0, y=0, z=0, vx=0, vy=0, vz=0]
-
-
-
+    // ekf_->setState(ekf_x,ekf_y,ekf_z, 0);
+    // Инициализация состояния EKF с учетом всех компонент
+    Eigen::VectorXd initial_state(7);
+    initial_state << ekf_x, ekf_y, ekf_z, 0, 0, 0, 0; // x,y,z,vx,vy,vz,psi
+    ekf_->setState(initial_state);
 
     double dt = 0.01;
     first_measurement_ = true; // Инициализация флага
@@ -41,7 +41,7 @@ SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
     sen_uWave->addPositionModem(10,10,10);
 
     senIMU = new IMUSensor(dt);
-    senPressure = new PressureSensor();
+    senPressure = new PressureSensor(ekf_z, 0);
 
     Upl = Upp = Usl = Usp = Uzl = Uzp = 0;
 
@@ -280,8 +280,26 @@ void SU_ROV::tick(const float Ttimer){
 
     // 1. Получение данных с датчиков
     auto imu_data = senIMU->getOutput();
+    Eigen::VectorXd imu_vec(6);
+    imu_vec << imu_data.acceleration, imu_data.angularRates;
+    ekf_->bufferMeasurement(imu_vec, simulation_time_, SensorType::IMU);
     double depth = senPressure->getOutput();
+    Eigen::VectorXd depth_vec(1);
+    depth_vec << depth;
+    ekf_->bufferMeasurement(depth_vec, simulation_time_, SensorType::DEPTH);
     double distance = sen_uWave->getOutput();
+
+    if(auto hydro = sen_uWave->getNextHydroData()) {
+        Eigen::VectorXd hydro_vec(1);
+        hydro_vec << hydro->distance;
+        ekf_->bufferMeasurement(hydro_vec, hydro->timestamp, SensorType::HYDRO);
+    }
+
+    // Основной цикл обработки
+    ekf_->processBufferedMeasurements(simulation_time_);
+
+    // Прогноз на следующий шаг (Ttimer)
+    // ekf_->predictWithDelay(0, Ttimer);
 
     // 2. Прогноз фильтра
     X[151][0] = imu_data.angularRates(2);
@@ -291,12 +309,14 @@ void SU_ROV::tick(const float Ttimer){
     if (distance > 0) {
         double time = simulation_time_ - last_correction_time_;
         qDebug() << "time" << time;
-        (ekf_->correct(distance, time, 2));
+        if (ekf_->correct(distance, time, 2))
             last_correction_time_ = simulation_time_;
     }
 
     // 4. Коррекция глубины по датчику давления
-    ekf_->correctDepth(depth);
+    if(senPressure->getOutput() > 0) {
+        ekf_->correctDepth(senPressure->getOutput());
+    }
 
     X[102][0] = distance;
 
@@ -308,7 +328,14 @@ void SU_ROV::tick(const float Ttimer){
 
 void SU_ROV::updateNavigationDisplay() {
     Eigen::VectorXd state = ekf_->getState();
-    emit updateCoromAUVEkf(state[0], state[1]);
+
+    // Обновление глобальных переменных из EKF
+    ekf_x = state[0];
+    ekf_y = state[1];
+    ekf_z = state[2];
+
+    // Отправка сигналов с актуальными данными
+    emit updateCoromAUVEkf(ekf_x, ekf_y);
     emit updateCoromAUVReal(x_global, y_global);
     if (X[102][0]>0) emit updateCircle(X[102][0]);
     emit updateVelocityVector_ekf(state[3], state[4]);

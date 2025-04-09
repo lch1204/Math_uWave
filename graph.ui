@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>825</width>
-    <height>659</height>
+    <width>892</width>
+    <height>469</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,7 +21,7 @@
      </property>
      <widget class="QWidget" name="X">
       <attribute name="title">
-       <string>Tab 1</string>
+       <string>X</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
@@ -31,7 +31,7 @@
      </widget>
      <widget class="QWidget" name="tab_2">
       <attribute name="title">
-       <string>Tab 2</string>
+       <string>Y</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
@@ -41,7 +41,7 @@
      </widget>
      <widget class="QWidget" name="tab_3">
       <attribute name="title">
-       <string>Page</string>
+       <string>Z</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_4">
        <item>
