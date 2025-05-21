@@ -71,27 +71,6 @@ void SignalPropagation::calculate_paths(const Point3D& tx, const Point3D& rx, co
                 break;
             }
         }
-
-        // // Если путь свободен, добавляем отраженный путь
-        // if (has_los_to_reflection) {
-        //     double distance_to_reflection = distance(tx, reflection_point);
-        //     double distance_from_reflection = distance(reflection_point, rx);
-        //     double total_distance =distance_to_reflection+distance_from_reflection;
-        //     Point3D norm = calculate_surface_normal(obs);
-        //     // Угловой фактор и затухание
-        //     double angle_factor = calculate_angle_cosine(tx, reflection_point, norm);
-        //     // qDebug() << "angle_factor" << angle_factor;
-        //     double attenuation = abs(pow(obs.reflection_loss, 1) * angle_factor);
-
-        //     // Добавляем путь в список
-        //     multipaths.push_back({
-        //         {tx, reflection_point, rx}, // Путь (точки)
-        //         attenuation,                // Затухание
-        //         total_distance / config.get<double>("sound_speed"), // Задержка
-        //         attenuation                 // Вес
-        //     });
-        //     // qDebug() << "multipaths.push_back attenuation" << attenuation;
-        // }
     }
 }
 

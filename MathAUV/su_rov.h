@@ -10,6 +10,7 @@
 #include "../Sensor/sensormove.h"
 #include "../Sensor/SensorIMU.h"
 #include "../Sensor/SensorPressure.h"
+#include "../Connection/pc_protocol.h"
 
 #define ANPA_MOD_CNT 24
 
@@ -107,10 +108,17 @@ public:
 
     void resetModel();
     void tick(const float Ttimer);
+    void tickExchange();
+
     float Fx,Fy,Fz; //total forces for XYZ-axis
     float Mx,My,Mz; //total moments for XYZ-axis
     void integrate(double &input, double &output, double &prevOutput, double dt);
     void updateNavigation(double dt);
+    void constructor();
+    void readData();
+    void sendData();
+
+    bool startt = false;
 
 
 
@@ -118,6 +126,7 @@ protected:
     Qkx_coeffs * K_protocol=nullptr;
     x_protocol * X_protocol=nullptr;
     QTimer timer;
+    QTimer timerExchange;
     // Параметры управления
     double m_targetDepth = 0.0;      ///< Целевая глубина
     double m_targetX = 0.0;          ///< Целевая X-координата
@@ -129,6 +138,9 @@ protected:
     SensorMove * sen_uWave = nullptr; //подключение гидроакустики
     PressureSensor * senPressure = nullptr; //подключение датчика давления
     IMUSensor * senIMU = nullptr; //подключение бсо
+
+    const QString ConfigFile = "protocols.conf";
+    ControlSystem::PC_Protocol *protocol = nullptr;
 
     /**
  * @brief Прогнозирование состояния на основе модели движения

@@ -52,16 +52,6 @@ void SensorMove::run_simulation_with_MathAUV(double x, double y, double z, doubl
 
     // Обновление времени симуляции
     simulation_time += dt; //dt - шаг симуляции
-
-    // Задержка для реального времени
-    // auto cycle_end = std::chrono::steady_clock::now();
-    // auto elapsed = std::chrono::duration<double>(cycle_end - cycle_start).count();
-    // if(elapsed < dt) {
-    //     std::this_thread::sleep_for(
-    //         std::chrono::duration<double>(dt - elapsed)
-    //         );
-    // }
-
 }
 
 void SensorMove::addPositionAUV(double x, double y, double z)
@@ -78,18 +68,6 @@ void SensorMove::readConfig(const string &config_file)
 {
     config.load(config_file);
     obstacles = config.get_obstacles();
-
-    // //инициализация начального местоположения датчиков
-    // try {
-    //     auto positions = config.get<vector<vector<double>>>("sensor.positions");
-    //     for(const auto& pos : positions) {
-    //         sensors.emplace_back(Point3D{pos[0], pos[1], pos[2]}, config);
-    //     }
-    // } catch (const std::exception& e) {
-    //     std::cerr << "Ошибка при чтении 'sensor.positions': " << e.what() << std::endl;
-    //     exit(EXIT_FAILURE);
-    // }
-
 
     // Настройка мобильности инициатора
     if(config.get<bool>("initiator.mobile")) {
@@ -158,22 +136,6 @@ void SensorMove::perform_measurements(double dt) {
             if (commentFlag) qDebug() << "No valid path to sensor" << i;
             delayAfterMeasurement = true;
         }
-
-        // // 4. Учет задержки между измерениями (из конфига)
-        // if (config.get<bool>("measurement_delay_flag"))
-        // {
-        //     double measurement_delay = config.get<double>("measurement_delay");
-        //     std::this_thread::sleep_for(
-        //         std::chrono::duration<double>(measurement_delay)
-        //         );
-        // }
-        // else
-        // {
-        //     qDebug() << "delays[0]" << delays[0]/config.get<double>("sound_speed");
-        //     std::this_thread::sleep_for(
-        //         std::chrono::duration<double>()
-        //         );
-        // }
     }
 }
 

@@ -8,85 +8,23 @@
 
 SU_ROV::SU_ROV(QObject *parent) : QObject(parent)
 {
-    // Eigen::MatrixXd st;
-    // st.resize(9);
-    // st.setZero();
-    X[124][1]  = ekf_x = a[15] = 5;
-    X[125][1]  = ekf_y = a[16] = 5;
-    X[126][1]  = ekf_z = a[17] = 10;
-    da[15] = 0;
-    da[16] = 0;
-    da[17] = 0;
+    protocol = new ControlSystem::PC_Protocol(ConfigFile,"agent");
+    qDebug() << "---start exchange";
+    protocol->startExchange();
 
-
-    beacon_position_ << 10.0, 10.0, 10.0; // Пример координат маяка
-    last_update_time_ = 0.0;
-    ekf_ = new NavigationEKF(beacon_position_);
-    ekf_->setState(ekf_x,ekf_y,ekf_z, 0);
-
-    // Инициализация EKF
-    state_.resize(6);
-    state_.setZero(); // Начальное состояние: [x=0, y=0, z=0, vx=0, vy=0, vz=0]
-
-
-
-
-    double dt = 0.01;
-    first_measurement_ = true; // Инициализация флага
-
-
-    sen_uWave = new SensorMove();
-    sen_uWave->readConfig("config.json");
-    sen_uWave->addPositionAUV(a[15],a[16],a[17]);
-    sen_uWave->addPositionModem(10,10,10);
-
-    senIMU = new IMUSensor(dt);
-    senPressure = new PressureSensor();
-
-    Upl = Upp = Usl = Usp = Uzl = Uzp = 0;
-
-    X_protocol = new x_protocol("kx_pult.conf", "x",X);
-    K_protocol = new Qkx_coeffs("kx_pult.conf","k");
-
-    X[1][0]=32;
-    connect(&timer, &QTimer::timeout,[this, dt](){
-        X[2][0]=K[32];
-        this->tick(dt);
+    connect(&timerExchange, &QTimer::timeout,[this](){
+        this->tickExchange();
     });
-    // resetModel();
-    timer.start(100);
-
-    m = 8.2;
-    cv1[1] = 7.4; cv1[2] = 5.9; cv1[3] = 10.0;
-    cv2[1] = 0.7; cv2[2] = 0.5; cv2[3] = 0.9;
-    cw1[1] = 1; cw1[2] = 1.4; cw1[3] = 0.018;
-    cw2[1] = 0.1; cw2[2] = 0.14; cw2[3] = 0.0018;
-    //Vt[1] = 0.2; Vt[2] = 0.2; Vt[3] = 0.2; Vt[4] = 0; Vt[5] = 0; Vt[6] = 0; // скорость течения
-    //Wv[1] = 0; Wv[2] = 0; Wv[3] = 0; Wv[4] = 0; Wv[5] = 0; Wv[6] = 0; //внешние возмущения, лин. скорости([1]-[3], угловые скорости - [4]-[6])
-    //h[1]= ; h[2]= ; h[3]= ; // радиус-вектор координат центра водоизмещения
-    lambda[1][1] = 0.66; lambda[2][2] = 3.768; lambda[3][3] = 3.768;
-    lambda[4][4] = 0; lambda[5][5] = 0.0185; lambda[6][6] = 0.0185;
-    Ta[1][1] = 0; Ta[1][2] = 0; Ta[1][3] = 1; Ta[1][4] = 1; Ta[1][5] = 0; Ta[1][6] = 0;
-    Ta[2][1] = 0.766; Ta[2][2] = -0.766; Ta[2][3] = 0; Ta[2][4] = 0; Ta[2][5] = 0.766; Ta[2][6] = -0.766;
-    Ta[3][1] = 0.64; Ta[3][2] = 0.64; Ta[3][3] = 0; Ta[3][4] = 0; Ta[3][5] = 0.64; Ta[3][6] = 0.64;
-    Ta[4][1] = -136.2*0.001; Ta[4][2] = 136.2*0.001; Ta[4][3] = 0; Ta[4][4] = 0; Ta[4][5] = -136.3*0.001; Ta[4][6] = 136.3*0.001;
-    Ta[5][1] = -136.6*0.001; Ta[5][2] = -136.6*0.001; Ta[5][3] = 0; Ta[5][4] = 0; Ta[5][5] = 136.6*0.001; Ta[5][6] = 136.6*0.001;
-    Ta[6][1] = 162.8*0.001; Ta[6][2] = -162.8*0.001; Ta[6][3] = 99*0.001; Ta[6][4] = -99*0.001; Ta[6][5] = -162.8*0.001; Ta[6][6] = 162.8*0.001;
-    //матрица сил и моментов инерции (проверить вторую матрицу, пока я вбила из мат модели, но кажется там я ошиблась она же не симметрична относительно оси, что странно)
-    C[1][1] = 0; C[1][2] = (m+lambda[2][2])*a[20]; C[1][3] = -(m + lambda[3][3])*a[19]; C[1][4] = 0; C[1][5] = 0; C[1][6] = 0;
-    C[2][1] = -(m + lambda[1][1])*a[20]; C[2][2] = 0; C[2][3] = (m + lambda[3][3])*a[18]; C[2][4] = 0; C[2][5] = 0; C[2][6] = 0;
-    C[3][1] = (m + lambda[1][1])*a[19]; C[3][2] = -(m+lambda[2][2])*a[18]; C[3][3] = 0; C[3][4] = 0; C[3][5] = 0; C[3][6] = 0;
-    C[4][1] = 0; C[4][2] = 0; C[4][3] = 0; C[4][4] = 0; C[4][5] = -(J[3]+lambda[6][6])*a[20]; C[4][6] = (J[2]+lambda[5][5])*a[19];
-    C[5][1] = 0; C[5][2] = 0; C[5][3] = 0; C[5][4] = (J[3]+lambda[6][6])*a[20]; C[5][5] = 0; C[5][6] = -(J[1]+lambda[4][4])*a[18];
-    C[6][1] = 0; C[6][2] = 0; C[6][3] = 0; C[6][4] = -(J[2]+lambda[5][5])*a[19]; C[6][5] = (J[1]+lambda[4][4])*a[18]; C[6][6] = 0;
-    J[1] = 0.02871; J[2] = 0.1045; J[3] = 0.1045; //моменты инерции вдоль соотв-х осей
-    kd = 2; //коэффициент усиления движителей
-    Td = 0.15; //постоянная времени движителей
-    depth_limit=50;
-    max_depth=50;
+    timerExchange.start(100);
 }
 
-    void SU_ROV::model(const float Upl,const float Upp,const float Usl,const float Usp, const float Uzl, const float Uzp) {
+void SU_ROV::tickExchange()
+{
+    readData();
+    sendData();
+}
+
+void SU_ROV::model(const float Upl,const float Upp,const float Usl,const float Usp, const float Uzl, const float Uzp) {
     int limit1, limit2;
     double G;
 
@@ -270,6 +208,8 @@ void SU_ROV::tick(const float Ttimer){
     simulation_time_ += Ttimer; // Ttimer = 0.01
     double usilenie = 50000;
     BFS_DRK(10,0,0,1*usilenie,0,0);
+
+
     runge(X[50][0], X[60][0], X[70][0], X[80][0], X[90][0], X[100][0],Ttimer,Ttimer);
     sen_uWave->run_simulation_with_MathAUV(x_global, y_global, z_global, Ttimer);
     Eigen::Vector3d true_angular_rates(Wx, Wy, Wz);
@@ -306,16 +246,130 @@ void SU_ROV::tick(const float Ttimer){
     senIMU->updateCoordinate(state[0], state[1], state[2]);
 }
 
+void SU_ROV::constructor()
+{
+    X[124][1]  = ekf_x = a[15] = -25;
+    X[125][1]  = ekf_y = a[16] = -25;
+    X[126][1]  = ekf_z = a[17] = 10;
+    da[15] = 0;
+    da[16] = 0;
+    da[17] = 0;
+
+    beacon_position_ << 50.0, 50.0, 10.0; // Пример координат маяка
+    last_update_time_ = 0.0;
+    ekf_ = new NavigationEKF(beacon_position_);
+    ekf_->setState(ekf_x,ekf_y,ekf_z, 0);
+
+    // Инициализация EKF
+    state_.resize(6);
+    state_.setZero(); // Начальное состояние: [x=0, y=0, z=0, vx=0, vy=0, vz=0]
+
+    double dt = 0.01;
+    first_measurement_ = true; // Инициализация флага
+
+
+    sen_uWave = new SensorMove();
+    sen_uWave->readConfig("config.json");
+    sen_uWave->addPositionAUV(a[15],a[16],a[17]);
+    sen_uWave->addPositionModem(50,50,10);
+
+    senIMU = new IMUSensor(dt);
+    senPressure = new PressureSensor();
+
+    Upl = Upp = Usl = Usp = Uzl = Uzp = 0;
+
+    X_protocol = new x_protocol("kx_pult.conf", "x",X);
+    K_protocol = new Qkx_coeffs("kx_pult.conf","k");
+
+    X[1][0]=32;
+    connect(&timer, &QTimer::timeout,[this, dt](){
+        X[2][0]=K[32];
+        this->tick(dt);
+    });
+    timer.start(100);
+
+    m = 8.2;
+    cv1[1] = 7.4; cv1[2] = 5.9; cv1[3] = 10.0;
+    cv2[1] = 0.7; cv2[2] = 0.5; cv2[3] = 0.9;
+    cw1[1] = 1; cw1[2] = 1.4; cw1[3] = 0.018;
+    cw2[1] = 0.1; cw2[2] = 0.14; cw2[3] = 0.0018;
+    //Vt[1] = 0.2; Vt[2] = 0.2; Vt[3] = 0.2; Vt[4] = 0; Vt[5] = 0; Vt[6] = 0; // скорость течения
+    //Wv[1] = 0; Wv[2] = 0; Wv[3] = 0; Wv[4] = 0; Wv[5] = 0; Wv[6] = 0; //внешние возмущения, лин. скорости([1]-[3], угловые скорости - [4]-[6])
+    //h[1]= ; h[2]= ; h[3]= ; // радиус-вектор координат центра водоизмещения
+    lambda[1][1] = 0.66; lambda[2][2] = 3.768; lambda[3][3] = 3.768;
+    lambda[4][4] = 0; lambda[5][5] = 0.0185; lambda[6][6] = 0.0185;
+    Ta[1][1] = 0; Ta[1][2] = 0; Ta[1][3] = 1; Ta[1][4] = 1; Ta[1][5] = 0; Ta[1][6] = 0;
+    Ta[2][1] = 0.766; Ta[2][2] = -0.766; Ta[2][3] = 0; Ta[2][4] = 0; Ta[2][5] = 0.766; Ta[2][6] = -0.766;
+    Ta[3][1] = 0.64; Ta[3][2] = 0.64; Ta[3][3] = 0; Ta[3][4] = 0; Ta[3][5] = 0.64; Ta[3][6] = 0.64;
+    Ta[4][1] = -136.2*0.001; Ta[4][2] = 136.2*0.001; Ta[4][3] = 0; Ta[4][4] = 0; Ta[4][5] = -136.3*0.001; Ta[4][6] = 136.3*0.001;
+    Ta[5][1] = -136.6*0.001; Ta[5][2] = -136.6*0.001; Ta[5][3] = 0; Ta[5][4] = 0; Ta[5][5] = 136.6*0.001; Ta[5][6] = 136.6*0.001;
+    Ta[6][1] = 162.8*0.001; Ta[6][2] = -162.8*0.001; Ta[6][3] = 99*0.001; Ta[6][4] = -99*0.001; Ta[6][5] = -162.8*0.001; Ta[6][6] = 162.8*0.001;
+    //матрица сил и моментов инерции (проверить вторую матрицу, пока я вбила из мат модели, но кажется там я ошиблась она же не симметрична относительно оси, что странно)
+    C[1][1] = 0; C[1][2] = (m+lambda[2][2])*a[20]; C[1][3] = -(m + lambda[3][3])*a[19]; C[1][4] = 0; C[1][5] = 0; C[1][6] = 0;
+    C[2][1] = -(m + lambda[1][1])*a[20]; C[2][2] = 0; C[2][3] = (m + lambda[3][3])*a[18]; C[2][4] = 0; C[2][5] = 0; C[2][6] = 0;
+    C[3][1] = (m + lambda[1][1])*a[19]; C[3][2] = -(m+lambda[2][2])*a[18]; C[3][3] = 0; C[3][4] = 0; C[3][5] = 0; C[3][6] = 0;
+    C[4][1] = 0; C[4][2] = 0; C[4][3] = 0; C[4][4] = 0; C[4][5] = -(J[3]+lambda[6][6])*a[20]; C[4][6] = (J[2]+lambda[5][5])*a[19];
+    C[5][1] = 0; C[5][2] = 0; C[5][3] = 0; C[5][4] = (J[3]+lambda[6][6])*a[20]; C[5][5] = 0; C[5][6] = -(J[1]+lambda[4][4])*a[18];
+    C[6][1] = 0; C[6][2] = 0; C[6][3] = 0; C[6][4] = -(J[2]+lambda[5][5])*a[19]; C[6][5] = (J[1]+lambda[4][4])*a[18]; C[6][6] = 0;
+    J[1] = 0.02871; J[2] = 0.1045; J[3] = 0.1045; //моменты инерции вдоль соотв-х осей
+    kd = 2; //коэффициент усиления движителей
+    Td = 0.15; //постоянная времени движителей
+    depth_limit=50;
+    max_depth=50;
+}
+
+void SU_ROV::readData()
+{
+    if (protocol->rec_data.data.startAlgorithm)
+    {
+        if (!startt) {
+            startt = true;
+            constructor();
+        }
+    }
+    else
+    {
+        startt = false;
+    }
+}
+
+void SU_ROV::sendData()
+{
+
+}
+
 void SU_ROV::updateNavigationDisplay() {
     Eigen::VectorXd state = ekf_->getState();
     emit updateCoromAUVEkf(state[0], state[1]);
     emit updateCoromAUVReal(x_global, y_global);
+    qDebug() << "x_global" << x_global << "; y_global" << y_global<< "; z_global" << z_global;
     if (X[102][0]>0) emit updateCircle(X[102][0]);
     emit updateVelocityVector_ekf(state[3], state[4]);
     emit updateVelocityVector_real(vx_global,vy_global);
     emit updateX(x_global, state[0], simulation_time_);
     emit updateY(y_global, state[1], simulation_time_);
     emit updateZ(z_global, state[2], simulation_time_);
+    if (startt)
+    {
+        if (X[102][0]>0) protocol->send_data.payload.map.circle_radius = X[102][0];
+        protocol->send_data.payload.map.ekf_vx = state[3];
+        protocol->send_data.payload.map.ekf_vy = state[4];
+        protocol->send_data.payload.map.ekf_x = state[0];
+        protocol->send_data.payload.map.ekf_y = state[1];
+        protocol->send_data.payload.map.real_vx = vx_global;
+        protocol->send_data.payload.map.real_vy = vy_global;
+        protocol->send_data.payload.map.real_x = x_global;
+//        protocol->send_data.payload.map.real_y = y_global;
+        protocol->send_data.payload.graph.ekf_x = state[0];
+//        protocol->send_data.payload.graph.ekf_y = state[1];
+        protocol->send_data.payload.graph.ekf_z = state[2];
+        protocol->send_data.payload.map.real_y = y_global;
+        protocol->send_data.payload.graph.ekf_y = state[1];
+        protocol->send_data.payload.graph.x = x_global;
+        protocol->send_data.payload.graph.y = y_global;
+        protocol->send_data.payload.graph.z = z_global;
+        protocol->send_data.payload.graph.timestamp =simulation_time_;
+    }
 }
 
 bool SU_ROV::check_measurement_validity(double distance, double dt) {
@@ -327,8 +381,8 @@ bool SU_ROV::check_measurement_validity(double distance, double dt) {
 }
 
 SU_ROV::~SU_ROV(){
-
 }
+
 void SU_ROV::runge(const float Upl,const float Upp,const float Usl,const float Usp, const float Uzl, const float Uzp, const float Ttimer, const float dt) {
     const double Kc = 180/M_PI;// перевод в градусы
     double a1[24], y[24];

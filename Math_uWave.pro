@@ -3,7 +3,7 @@ QT += network
 QT += widgets
 TEMPLATE = app
 
-CONFIG += c++17 cmdline
+CONFIG += c++17
 
 SOURCES += \
         form.cpp \
@@ -36,7 +36,10 @@ HEADERS += \
     MathAUV/kx_protocol.h \
     MathAUV/qkx_coeffs.h \
     MathAUV/qpiconfig.h \
-    MathAUV/su_rov.h
+    MathAUV/su_rov.h \
+    Connection/pc_protocol.h \
+    Connection/protocol.h \
+    Connection/udp_protocol.h
 
 INCLUDEPATH += $$PWD/include
 

@@ -77,8 +77,7 @@ Form::Form(QWidget *parent)
     chartView->setMinimumSize(600,600);
     chartView->setRubberBand(QChartView::RectangleRubberBand);
 
-    beaconPositionReal->append(10,10);
-
+    beaconPositionReal->append(5,5);//здесь на графике отображаю
     // Инициализация графических элементов для наконечника стрелки
     velocityArrowHead = new QGraphicsPolygonItem();
     chartView->scene()->addItem(velocityArrowHead);
