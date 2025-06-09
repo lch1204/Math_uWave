@@ -204,7 +204,8 @@ void SU_ROV::resetModel(){
     }
 }
 
-void SU_ROV::tick(const float Ttimer){
+void SU_ROV::tick(const float Ttimer)
+{
     simulation_time_ += Ttimer; // Ttimer = 0.01
     double usilenie = 50000;
     BFS_DRK(10,0,0,1*usilenie,0,0);
@@ -248,14 +249,19 @@ void SU_ROV::tick(const float Ttimer){
 
 void SU_ROV::constructor()
 {
-    X[124][1]  = ekf_x = a[15] = -25;
-    X[125][1]  = ekf_y = a[16] = -25;
-    X[126][1]  = ekf_z = a[17] = 10;
+
+    X[124][1]  = ekf_x = a[15] = protocol->rec_data.data.sensor.positions[0][0];
+    X[125][1]  = ekf_y = a[16] = protocol->rec_data.data.sensor.positions[0][1];
+    X[126][1]  = ekf_z = a[17] = protocol->rec_data.data.sensor.positions[0][2];
     da[15] = 0;
     da[16] = 0;
     da[17] = 0;
 
-    beacon_position_ << 50.0, 50.0, 10.0; // Пример координат маяка
+    double xb = protocol->rec_data.data.sensor.positions[1][0];
+    double yb = protocol->rec_data.data.sensor.positions[1][1];
+    double zb = protocol->rec_data.data.sensor.positions[1][2];
+    beacon_position_ << xb, yb,zb; // Пример координат маяка
+    qDebug() << "xb, yb,zb" << xb <<"yb" << yb << "zb"<< zb;
     last_update_time_ = 0.0;
     ekf_ = new NavigationEKF(beacon_position_);
     ekf_->setState(ekf_x,ekf_y,ekf_z, 0);
@@ -271,7 +277,7 @@ void SU_ROV::constructor()
     sen_uWave = new SensorMove();
     sen_uWave->readConfig("config.json");
     sen_uWave->addPositionAUV(a[15],a[16],a[17]);
-    sen_uWave->addPositionModem(50,50,10);
+    sen_uWave->addPositionModem(xb,yb,zb);
 
     senIMU = new IMUSensor(dt);
     senPressure = new PressureSensor();
@@ -316,6 +322,7 @@ void SU_ROV::constructor()
     Td = 0.15; //постоянная времени движителей
     depth_limit=50;
     max_depth=50;
+    protocol->send_data.payload.start = true;
 }
 
 void SU_ROV::readData()
@@ -339,11 +346,20 @@ void SU_ROV::sendData()
 }
 
 void SU_ROV::updateNavigationDisplay() {
+    static double rr =0;
     Eigen::VectorXd state = ekf_->getState();
     emit updateCoromAUVEkf(state[0], state[1]);
     emit updateCoromAUVReal(x_global, y_global);
     qDebug() << "x_global" << x_global << "; y_global" << y_global<< "; z_global" << z_global;
-    if (X[102][0]>0) emit updateCircle(X[102][0]);
+    if (X[102][0]>0)
+    {
+        emit updateCircle(X[102][0]);
+        rr = X[102][0];
+
+    }
+    protocol->send_data.payload.map.circle_radius = rr;
+    qDebug() << "X[102][0]" << X[102][0];
+    qDebug() << "rr" << rr;
     emit updateVelocityVector_ekf(state[3], state[4]);
     emit updateVelocityVector_real(vx_global,vy_global);
     emit updateX(x_global, state[0], simulation_time_);
@@ -351,7 +367,7 @@ void SU_ROV::updateNavigationDisplay() {
     emit updateZ(z_global, state[2], simulation_time_);
     if (startt)
     {
-        if (X[102][0]>0) protocol->send_data.payload.map.circle_radius = X[102][0];
+//        if (X[102][0]>0) protocol->send_data.payload.map.circle_radius = X[102][0];
         protocol->send_data.payload.map.ekf_vx = state[3];
         protocol->send_data.payload.map.ekf_vy = state[4];
         protocol->send_data.payload.map.ekf_x = state[0];

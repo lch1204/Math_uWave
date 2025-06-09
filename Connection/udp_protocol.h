@@ -7,6 +7,7 @@
 #include <QUdpSocket>
 #include "../MathAUV/qpiconfig.h"
 
+
 template <class ReceiveStruct, class SendStruct>
 
 class UdpProtocol : public QObject {
@@ -14,26 +15,25 @@ public:
     ReceiveStruct rec_data; //структура для приема данных
     SendStruct send_data; //структура для отпарвки данных
     explicit UdpProtocol (const QString & config = "protocols.conf",
-                          const QString & name = "agent", QObject *parent = 0){
+                          const QString & name = "pult", QObject *parent = 0){
         QPIConfig conf(config, QIODevice::ReadOnly);
         QPIConfig::Entry & e(conf.getValue(name));
         //прежде чем создать соединение по сети между пультом и
         //ТНПА необходимо задать ip адреса и порты для отправки и приема данных
         //эти значения считываем из config-файла, имя которого передается
         //в конструктор класса (принцип аналогичен config-файлам kx_pult'a)
-        m_ip_sender = e.getValue("sender.ip").value(); //ip ПУ
+        m_ip_sender = e.getValue("sender.ip").value(); //ip верхнего уровня
         m_ip_receiver = e.getValue("receiver.ip").value(); //ip ROV_Model
-        m_port_sender = e.getValue("sender.port", 0); //порт ПУ
+        m_port_sender = e.getValue("sender.port", 0); //порт верхнего уровня
         m_port_receiver = e.getValue("receiver.port", 0); //порт ROV_Model
-        frequency = e.getValue("receiver.frequency", 20); //частота передачи данных
+        m_frequency = e.getValue("receiver.frequency", 20); //частота передачи данных
         //если в config-файле не указана частота передачи данных, то
         //по умолчанию в качестве этого значения принимается 20
         //(второй параметр в функции getValue())
 
         qInfo() << "Sender (ROV) ip:" << m_ip_sender << "port:" << m_port_sender;
         qInfo() << "Receiver (Pult) ip:" << m_ip_receiver << "port:" << m_port_receiver;
-        qInfo() << "Frequency:" << frequency;
-
+        qInfo() << "Frequency:" << m_frequency;
 
         receiveSocket = new QUdpSocket(); //создаем сокет на прием данных
         bindState_=receiveSocket->bind(m_ip_receiver, m_port_receiver);
@@ -56,7 +56,7 @@ public:
         delete sendSocket;
     }
     float getFrequency(){
-        return frequency;
+        return m_frequency;
     }
 
     QUdpSocket *getReceiveSocket(){
@@ -66,11 +66,9 @@ public:
     QHostAddress ip_sender(){return m_ip_sender;}
     int port_receiver(){return m_port_receiver;}
     int port_sender(){return m_port_sender;}
+    float frequency(){return m_frequency;}
     bool bindState(){return bindState_;}
     void setCheckState(bool state) {checkState = state;}
-    float frequency; //частота обмена данными ТНПА с ПУ
-    int counter_r = 0;
-    int counter_s = 0;
 private:
     bool bindState_=false;
     bool checkState = true;
@@ -78,61 +76,67 @@ private:
     QUdpSocket *sendSocket; //UDP-socket для отпарвки данных
     QHostAddress m_ip_receiver, m_ip_sender;
     int m_port_receiver, m_port_sender; //номера портов приема и передачи
+    float m_frequency; //частота обмена данными ТНПА с ПУ
     //функция вычисления контрольной суммы
-    uint checksum_i(const void *data, size_t size) {
-        if (!data || size == 0) {
-            return 0; // или другое значение по умолчанию
+//    uint checksum_i(const void * data, int size){ // function for checksum (uint)
+//        uint c = 0;
+//        for (int i = 0; i < size; ++i)
+//            c += ((const uchar*)data)[i];
+//        return ~(c + 1);
+//    }
+
+    quint16 getChecksum16b(const void * vector) {
+        quint16 len = sizeof(vector)-2;
+        quint16 crc = 0xFFFF;
+        quint8 i;
+        quint8 g = 0;
+
+        while (len--) {
+            crc ^= ((const uchar*)vector)[g++] << 8;
+
+            for (i = 0; i < 8; i++) crc = crc & 0x8000 ? (crc << 1) ^ 0x1021 : crc << 1;
         }
-
-        uint sum = 0;
-        const uint *bytes = static_cast<const uint*>(data);
-
-        for (size_t i = 0; i < size; ++i) {
-            // Контролируемое сложение с защитой от переполнения
-            sum = (sum + bytes[i]) & 0xFFFFFFFF;
-        }
-
-        // Дополнение до двух и инверсия
-        return ~(sum + 1);
+        return crc;
     }
+
     //проверка верна ли контрольная сумма
     bool validate(const ReceiveStruct & data) {
         if (!checkState) {return true;}
-        else return (data.checksum == checksum_i(&data, sizeof(data) - 4));
+//        else return (data.checksum == checksum_i(&data, sizeof(data) - 4));
+       else return (data.checksum == getChecksum16b(&data));
     }
-    bool validate(const SendStruct & data) {
-        if (!checkState) {return true;}
-        else  return (data.checksum == checksum_i(&data, sizeof(data) - 4));
-    }
+
     void aboutSend() {
-        send_data.checksum = checksum_i(&send_data, sizeof(send_data) - 4);
+//        send_data.checksum = checksum_i(&send_data, sizeof(send_data) - 4);
+        send_data.checksum = getChecksum16b(&send_data);
     } //функция, которая вычисляет контроьную сумму и записывает
     //ее в переменную checksum структуры отправки
 
 public slots:
     void sendData(){
+//        qDebug() << "send_data" << sizeof(send_data);
         aboutSend();//считаем контрольную сумму и записываем ее в переменную checksum структуры send_data (типа SendStruct)
         //Отсылаем структуру send_data на ip_sender на порт port_sender
         sendSocket->writeDatagram((char *)&send_data, sizeof(send_data),m_ip_sender, m_port_sender);
-        counter_s++;
-        // qDebug() <<"send to ip:" << m_ip_sender << "port:" << m_port_sender;
+        //qDebug() <<"send to ip:" << m_ip_sender << "port:" << m_port_sender;   06/04/24
+        //qDebug() <<"reseive to ip: " << m_ip_receiver << "port: " << m_port_receiver;  06/04/24
+        //qDebug() << "sizeof(send_data): " <<(sizeof(send_data));  06/04/24
     } //метод для отправки данных, который можно вызывать по сигналу таймера
     void receiveData(){
         while(receiveSocket->hasPendingDatagrams()) {
             ReceiveStruct rec;// создаем локальную переменную для приема данных до проверки
             receiveSocket->readDatagram((char *)&rec, sizeof(rec)); //считываем данные
-            if (!validate(rec)) {
-                //Функция validate возвращает true - если контрольная сумма верна
-                //и возвращает false, если это не так
-                //в этой части функции контрольная сумма не верна
+//            qDebug() << "sizeof(rec): "<< sizeof(rec);
+//            if (!validate(rec)) {
+//                //Функция validate возвращает true - если контрольная сумма верна
+//                //и возвращает false, если это не так
+//                //в этой части функции контрольная сумма не верна
 //                qDebug() << "Checksum validate" << validate(rec);
-////                qDebug() << "data" << rec;
-//                qDebug() << "Checksum validation failed. Expected:" << rec.checksum
-//                             << "Calculated:" << checksum_i(&rec, sizeof(rec) - 4);
 //                continue;
-                //оператор continue выполняет пропуск оставшейся части кода
-                //      тела цикла и переходит к следующей итерации цикла
-            }
+//                //оператор continue выполняет пропуск оставшейся части кода
+//                //      тела цикла и переходит к следующей итерации цикла
+//            }
+//            else {qDebug() << "Checksum true" << validate(rec); }
             rec_data = rec;//Если контрльная сумма верна, то записываем
             //принятые данные в структуру rec_data
         }
@@ -143,9 +147,6 @@ public slots:
         return (sendSocket->writeDatagram(ba,m_ip_sender,m_port_sender));
         }
     };
-
-
-
 
     class MetaUdpProtocol {
     public:
@@ -184,8 +185,6 @@ public slots:
                                              //sender - модель ТНПА
         int m_port_receiver, m_port_sender; //номера портов приема и передачи
         float m_frequency; //частота обмена данными ТНПА с ПУ
-
-
 };
 
 #endif // UDP_PROTOCOL_H
