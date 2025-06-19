@@ -6,7 +6,7 @@ NavigationEKF::NavigationEKF(const Eigen::Vector3d& beacon_position)
     state_.resize(STATE_DIM);
     state_.setZero();
 
-    covariance_ = Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM) * 0.1;
+    covariance_ = Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM) * 1;
 
     // Настройка шумов (примерные значения)
     Q_ = Eigen::MatrixXd::Zero(STATE_DIM, STATE_DIM);
@@ -26,15 +26,13 @@ void NavigationEKF::predict(double dt,
                             const Eigen::Vector3d& linear_acc,
                             double angular_vel_z) {
     // 1. Обновление курса (в радианах)
-    double psi = state_(6) + angular_vel_z * dt;
-    // state_(6) = normalizeAngle(psi);
-    state_(6) = (psi);
-    X[150][0] = state_(6);
+    double psi = state_(5) + angular_vel_z * dt; // частота 100 гц
+     state_(5) = normalizeAngle(psi);
+    X[150][0] = state_(5);
     X[152][0] = psi;
-    state_(6) = angular_vel_z*M_PI/180;
 
     // 2. Преобразование локальных скоростей в глобальные
-    Eigen::Matrix3d R = yawToRotation(state_(6));
+    Eigen::Matrix3d R = yawToRotation(state_(5));
     Eigen::Vector3d vel_global = R * state_.segment<3>(3);
 
     // 3. Обновление позиции в глобальной СК
@@ -43,8 +41,8 @@ void NavigationEKF::predict(double dt,
     // 4. Обновление скоростей в связанной СК (ускорение от IMU)
     state_.segment<3>(3) += linear_acc * dt;
 
-    // 5. Линеаризация и обновление ковариации
-    Eigen::MatrixXd F = computeProcessJacobian(dt, state_(6));
+//    // 5. Линеаризация и обновление ковариации
+    Eigen::MatrixXd F = computeProcessJacobian(dt, state_(5));
     covariance_ = F * covariance_ * F.transpose() + Q_;
 }
 
@@ -101,8 +99,8 @@ void NavigationEKF::correctDepth(double measured_z) {
     state_(2) += K(2,0) * (measured_z - state_(2));
 
     // Обновление ковариации
-    Eigen::MatrixXd I = Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
-    covariance_ = (I - K * H) * covariance_;
+//    Eigen::MatrixXd I = Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
+//    covariance_ = (I - K * H) * covariance_;
 }
 
 void NavigationEKF::setState(double x, double y, double z, double psi)

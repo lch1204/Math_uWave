@@ -166,9 +166,9 @@ protected:
         IMUOutput imu_data = senIMU->getOutput();
 
         // Прогнозируем скорость (если нужно)
-        state_(3) = imu_data.speed(0); // Vx
-        state_(4) = imu_data.speed(1); // Vy
-        state_(5) = imu_data.speed(2); // Vz
+        state_(3) = imu_data.speedGlobal(0); // Vx
+        state_(4) = imu_data.speedGlobal(1); // Vy
+        state_(5) = imu_data.speedGlobal(2); // Vz
 
         // Обновление ковариации
         covariance_ = F_ * covariance_ * F_.transpose() + Q_;

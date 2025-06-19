@@ -84,6 +84,7 @@ void SensorMove::perform_measurements(double dt) {
 
     if (delayAfterMeasurement)
     {
+        //dt здесь в секундах
         double deltaZad = lastDistance/config.get<double>("sound_speed")+config.get<double>("measurement_delay");
         if (deltaZad>delayDt)
         {

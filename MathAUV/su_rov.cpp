@@ -207,15 +207,15 @@ void SU_ROV::resetModel(){
 void SU_ROV::tick(const float Ttimer)
 {
     simulation_time_ += Ttimer; // Ttimer = 0.01
-    double usilenie = 50000;
+    double usilenie = 500;
     BFS_DRK(10,0,0,1*usilenie,0,0);
 
 
     runge(X[50][0], X[60][0], X[70][0], X[80][0], X[90][0], X[100][0],Ttimer,Ttimer);
     sen_uWave->run_simulation_with_MathAUV(x_global, y_global, z_global, Ttimer);
-    Eigen::Vector3d true_angular_rates(Wx, Wy, Wz);
+    Eigen::Vector3d true_angular_rates(a[18],a[19],a[20]);
     Eigen::Vector3d true_linear_vel(vx_local, vy_local, vz_local);
-    senIMU->update(Gamma_g, Tetta_g,Psi_g,true_angular_rates,true_linear_vel);
+    senIMU->update(a[4], a[5], a[6],true_angular_rates,true_linear_vel,Ttimer);
     senPressure->update(z_global,Ttimer);
 
 
@@ -226,15 +226,15 @@ void SU_ROV::tick(const float Ttimer)
 
     // 2. Прогноз фильтра
     X[151][0] = imu_data.angularRates(2);
-    ekf_->predict(Ttimer, imu_data.acceleration, imu_data.orientation(2));
+    ekf_->predict(Ttimer, imu_data.accelerationLocal, imu_data.angularRates(2));
 
-    // Коррекция по расстоянию до маяка
-    if (distance > 0) {
-        double time = simulation_time_ - last_correction_time_;
-        qDebug() << "time" << time;
-        (ekf_->correct(distance, time, 2));
-            last_correction_time_ = simulation_time_;
-    }
+//    // Коррекция по расстоянию до маяка
+//    if (distance > 0) {
+//        double time = simulation_time_ - last_correction_time_;
+//        qDebug() << "time" << time;
+//        (ekf_->correct(distance, time, 2));
+//            last_correction_time_ = simulation_time_;
+//    }
 
     // 4. Коррекция глубины по датчику давления
     ekf_->correctDepth(depth);
@@ -249,10 +249,17 @@ void SU_ROV::tick(const float Ttimer)
 
 void SU_ROV::constructor()
 {
+    // Инициализация EKF
+    state_.resize(6);
+    state_.setZero(); // Начальное состояние: [x=0, y=0, z=0, vx=0, vy=0, vz=0]
 
-    X[124][1]  = ekf_x = a[15] = protocol->rec_data.data.sensor.positions[0][0];
-    X[125][1]  = ekf_y = a[16] = protocol->rec_data.data.sensor.positions[0][1];
-    X[126][1]  = ekf_z = a[17] = protocol->rec_data.data.sensor.positions[0][2];
+    X[121][1] = a[1];  // vx_local
+    X[122][1] = a[2];  // vy_local
+    X[123][1] = a[3];  // vz_local
+
+    X[124][1]  = state_(0) = ekf_x = a[15] = protocol->rec_data.data.sensor.positions[0][0];
+    X[125][1]  = state_(1) = ekf_y = a[16] = protocol->rec_data.data.sensor.positions[0][1];
+    X[126][1]  = state_(2) = ekf_z = a[17] = protocol->rec_data.data.sensor.positions[0][2];
     da[15] = 0;
     da[16] = 0;
     da[17] = 0;
@@ -266,11 +273,7 @@ void SU_ROV::constructor()
     ekf_ = new NavigationEKF(beacon_position_);
     ekf_->setState(ekf_x,ekf_y,ekf_z, 0);
 
-    // Инициализация EKF
-    state_.resize(6);
-    state_.setZero(); // Начальное состояние: [x=0, y=0, z=0, vx=0, vy=0, vz=0]
-
-    double dt = 0.01;
+    double dt = 0.01;//время в секундах
     first_measurement_ = true; // Инициализация флага
 
 
@@ -292,7 +295,7 @@ void SU_ROV::constructor()
         X[2][0]=K[32];
         this->tick(dt);
     });
-    timer.start(100);
+    timer.start(dt*1000);
 
     m = 8.2;
     cv1[1] = 7.4; cv1[2] = 5.9; cv1[3] = 10.0;
@@ -351,6 +354,8 @@ void SU_ROV::updateNavigationDisplay() {
     emit updateCoromAUVEkf(state[0], state[1]);
     emit updateCoromAUVReal(x_global, y_global);
     qDebug() << "x_global" << x_global << "; y_global" << y_global<< "; z_global" << z_global;
+    qDebug() << "state[0]" << state[0] << "; state[1]" << state[1]<< "; state[2]" << state[2];
+
     if (X[102][0]>0)
     {
         emit updateCircle(X[102][0]);
@@ -360,7 +365,11 @@ void SU_ROV::updateNavigationDisplay() {
     protocol->send_data.payload.map.circle_radius = rr;
     qDebug() << "X[102][0]" << X[102][0];
     qDebug() << "rr" << rr;
-    emit updateVelocityVector_ekf(state[3], state[4]);
+
+    auto imu_data = senIMU->getOutput();
+    emit updateVelocityVector_ekf(imu_data.speedGlobal.x(), imu_data.speedGlobal.y());
+    qDebug() << "speedGlobal.x: "<< imu_data.speedGlobal.x() << ", speedGlobal.y: "<< imu_data.speedGlobal.y();
+    qDebug() << "vx_global: "<<vx_global <<", vy_global: "<<vy_global;
     emit updateVelocityVector_real(vx_global,vy_global);
     emit updateX(x_global, state[0], simulation_time_);
     emit updateY(y_global, state[1], simulation_time_);
