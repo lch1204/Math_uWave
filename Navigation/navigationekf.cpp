@@ -1,5 +1,6 @@
 #include "navigationekf.h"
 #include <iostream>
+#include <QDebug>
 
 NavigationEKF::NavigationEKF(const Eigen::Vector3d& beacon_position)
     : beacon_pos_(beacon_position) {
@@ -11,9 +12,12 @@ NavigationEKF::NavigationEKF(const Eigen::Vector3d& beacon_position)
     // Настройка шумов (примерные значения)
     Q_ = Eigen::MatrixXd::Zero(STATE_DIM, STATE_DIM);
     Q_.diagonal() <<
-        /* Позиция (x,y,z) */ 6.7e-7, 3.4e-6, 2.0e-8,
-        /* Скорости (vx,vy,vz) */ 1.34e-4, 3.4e-4, 2.0e-5,
-        /* Курс (ψ) */ 1.0e-4;
+        /* Позиция (x,y,z) */ 60.7, 30.4, 20.0,
+        /* Скорости (vx,vy,vz) */ 10.34, 30.4, 20.0,
+        /* Курс (ψ) */ 1.0;
+//                     /* Позиция (x,y,z) */ 6.7e-7, 3.4e-6, 2.0e-8,
+//                             /* Скорости (vx,vy,vz) */ 1.34e-4, 3.4e-4, 2.0e-5,
+//                             /* Курс (ψ) */ 1.0e-4;
 
     // Для глубины:
     R_depth_ = Eigen::MatrixXd::Identity(1,1) * 0.1;
@@ -24,12 +28,16 @@ NavigationEKF::NavigationEKF(const Eigen::Vector3d& beacon_position)
 
 void NavigationEKF::predict(double dt,
                             const Eigen::Vector3d& linear_acc,
-                            double angular_vel_z) {
+                            double angular_vel_z, double psi_imu) {
     // 1. Обновление курса (в радианах)
-    double psi = state_(5) + angular_vel_z * dt; // частота 100 гц
-     state_(5) = normalizeAngle(psi);
+//    double psi = state_(5) + angular_vel_z * dt; // частота 100 гц
+    double psi = state_(5) = normalizeAngle(psi_imu);
+//     state_(5) = normalizeAngle(psi);
     X[150][0] = state_(5);
     X[152][0] = psi;
+    qDebug() << "state_(5)" << state_(5);
+    qDebug() << "psi" << psi;
+    qDebug() << "normalizeAngle(psi)" << normalizeAngle(psi);
 
     // 2. Преобразование локальных скоростей в глобальные
     Eigen::Matrix3d R = yawToRotation(state_(5));
@@ -50,8 +58,8 @@ bool NavigationEKF::correct(double measured_distance, double delta_t, double max
     // 1. Вычисление разности между положением аппарата и маяком
     Eigen::Vector3d delta = state_.segment<3>(0) - beacon_pos_;
     double predicted_distance = delta.norm(); //вычисляем длину
-    if(predicted_distance < 1e-6)
-        return false;
+//    if(predicted_distance < 1e-6)
+//        return false;
 
     // 2. Вычисление инновации
     double innovation = measured_distance - predicted_distance;
@@ -59,7 +67,7 @@ bool NavigationEKF::correct(double measured_distance, double delta_t, double max
     // 3. Вычисление максимально допустимого перемещения
     double max_innovation = max_speed * delta_t;
 
-    // 4. Ограничение (гейтеринг) инновации
+//    // 4. Ограничение (гейтеринг) инновации
     if(std::fabs(innovation) > max_innovation) {
         // Можно либо просто обрезать значение инновации:
         innovation = (innovation > 0) ? max_innovation : -max_innovation;
@@ -99,8 +107,8 @@ void NavigationEKF::correctDepth(double measured_z) {
     state_(2) += K(2,0) * (measured_z - state_(2));
 
     // Обновление ковариации
-//    Eigen::MatrixXd I = Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
-//    covariance_ = (I - K * H) * covariance_;
+    Eigen::MatrixXd I = Eigen::MatrixXd::Identity(STATE_DIM, STATE_DIM);
+    covariance_ = (I - K * H) * covariance_;
 }
 
 void NavigationEKF::setState(double x, double y, double z, double psi)

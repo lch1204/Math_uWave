@@ -11,6 +11,7 @@
 #include "../Sensor/SensorIMU.h"
 #include "../Sensor/SensorPressure.h"
 #include "../Connection/pc_protocol.h"
+#include "logreader.h"
 
 #define ANPA_MOD_CNT 24
 
@@ -138,6 +139,7 @@ protected:
     SensorMove * sen_uWave = nullptr; //подключение гидроакустики
     PressureSensor * senPressure = nullptr; //подключение датчика давления
     IMUSensor * senIMU = nullptr; //подключение бсо
+    LogReader * log = nullptr;
 
     const QString ConfigFile = "protocols.conf";
     ControlSystem::PC_Protocol *protocol = nullptr;

@@ -116,7 +116,8 @@ public:
         double meas_pitch = quantize(filt_pitch + orientation_bias(1) + noise(noise_dist_orientation_pitch), resolution);
         double meas_yaw   = quantize(filt_yaw + orientation_bias(2) + noise(noise_dist_orientation_yaw), resolution);
 
-        imu_output.orientation << meas_roll, meas_pitch, meas_yaw;
+//        imu_output.orientation << meas_roll, meas_pitch, meas_yaw;
+        imu_output.orientation << true_roll, true_pitch, true_yaw;
 
         X[110][0] = meas_roll;
         X[111][0] = meas_pitch;

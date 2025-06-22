@@ -6,6 +6,7 @@ TEMPLATE = app
 CONFIG += c++17
 
 SOURCES += \
+        MathAUV/logreader.cpp \
         form.cpp \
         graph.cpp \
         main.cpp \
@@ -18,9 +19,11 @@ SOURCES += \
         MathAUV/qkx_coeffs.cpp \
         MathAUV/qpiconfig.cpp \
         MathAUV/su_rov.cpp \
-        setvariable_t.cpp
+        setvariable_t.cpp \
+        MathAUV/logreader.cpp
 
 HEADERS += \
+    MathAUV/logreader.h \
     Sensor/SensorIMU.h \
     Sensor/SensorPressure.h \
     form.h \
@@ -39,7 +42,8 @@ HEADERS += \
     MathAUV/su_rov.h \
     Connection/pc_protocol.h \
     Connection/protocol.h \
-    Connection/udp_protocol.h
+    Connection/udp_protocol.h \
+    MathAUV/logreader.h
 
 INCLUDEPATH += $$PWD/include
 

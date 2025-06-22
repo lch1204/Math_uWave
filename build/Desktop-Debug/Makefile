@@ -52,7 +52,8 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = ../../form.cpp \
+SOURCES       = ../../MathAUV/logreader.cpp \
+		../../form.cpp \
 		../../graph.cpp \
 		../../main.cpp \
 		../../Navigation/navigationekf.cpp \
@@ -64,7 +65,8 @@ SOURCES       = ../../form.cpp \
 		../../MathAUV/qkx_coeffs.cpp \
 		../../MathAUV/qpiconfig.cpp \
 		../../MathAUV/su_rov.cpp \
-		../../setvariable_t.cpp moc_form.cpp \
+		../../setvariable_t.cpp \
+		../../MathAUV/logreader.cpp moc_form.cpp \
 		moc_graph.cpp \
 		moc_setvariable_t.cpp \
 		moc_configdata.cpp \
@@ -72,7 +74,8 @@ SOURCES       = ../../form.cpp \
 		moc_qkx_coeffs.cpp \
 		moc_su_rov.cpp \
 		moc_pc_protocol.cpp
-OBJECTS       = form.o \
+OBJECTS       = logreader.o \
+		form.o \
 		graph.o \
 		main.o \
 		navigationekf.o \
@@ -85,6 +88,7 @@ OBJECTS       = form.o \
 		qpiconfig.o \
 		su_rov.o \
 		setvariable_t.o \
+		logreader.o \
 		moc_form.o \
 		moc_graph.o \
 		moc_setvariable_t.o \
@@ -171,6 +175,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf \
+		../../.qmake.stash \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
@@ -191,7 +196,8 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exceptions.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/yacc.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf \
-		../../../../Math_uWave.pro ../../Sensor/SensorIMU.h \
+		../../../../Math_uWave.pro ../../MathAUV/logreader.h \
+		../../Sensor/SensorIMU.h \
 		../../Sensor/SensorPressure.h \
 		../../form.h \
 		../../Navigation/navigationekf.h \
@@ -209,7 +215,9 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		../../MathAUV/su_rov.h \
 		../../Connection/pc_protocol.h \
 		../../Connection/protocol.h \
-		../../Connection/udp_protocol.h ../../form.cpp \
+		../../Connection/udp_protocol.h \
+		../../MathAUV/logreader.h ../../MathAUV/logreader.cpp \
+		../../form.cpp \
 		../../graph.cpp \
 		../../main.cpp \
 		../../Navigation/navigationekf.cpp \
@@ -221,7 +229,8 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		../../MathAUV/qkx_coeffs.cpp \
 		../../MathAUV/qpiconfig.cpp \
 		../../MathAUV/su_rov.cpp \
-		../../setvariable_t.cpp
+		../../setvariable_t.cpp \
+		../../MathAUV/logreader.cpp
 QMAKE_TARGET  = Math_uWave
 DESTDIR       = ../../config/
 TARGET        = ../../config/Math_uWave
@@ -312,6 +321,7 @@ Makefile: ../../Math_uWave.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf \
+		.qmake.stash \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
@@ -412,6 +422,7 @@ Makefile: ../../Math_uWave.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.conf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf:
+.qmake.stash:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf:
@@ -448,8 +459,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../../Sensor/SensorIMU.h ../../Sensor/SensorPressure.h ../../form.h ../../Navigation/navigationekf.h ../../graph.h ../../readerjson.h ../../Sensor/sensormove.h ../../Sensor/signalpropagation.h ../../setvariable_t.h ../../stucturs.h ../../Sensor/sensor_uwave.h ../../MathAUV/configdata.h ../../MathAUV/kx_protocol.h ../../MathAUV/qkx_coeffs.h ../../MathAUV/qpiconfig.h ../../MathAUV/su_rov.h ../../Connection/pc_protocol.h ../../Connection/protocol.h ../../Connection/udp_protocol.h $(DISTDIR)/
-	$(COPY_FILE) --parents ../../form.cpp ../../graph.cpp ../../main.cpp ../../Navigation/navigationekf.cpp ../../readerjson.cpp ../../Sensor/sensormove.cpp ../../Sensor/signalpropagation.cpp ../../MathAUV/configdata.cpp ../../MathAUV/kx_protocol.cpp ../../MathAUV/qkx_coeffs.cpp ../../MathAUV/qpiconfig.cpp ../../MathAUV/su_rov.cpp ../../setvariable_t.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../../MathAUV/logreader.h ../../Sensor/SensorIMU.h ../../Sensor/SensorPressure.h ../../form.h ../../Navigation/navigationekf.h ../../graph.h ../../readerjson.h ../../Sensor/sensormove.h ../../Sensor/signalpropagation.h ../../setvariable_t.h ../../stucturs.h ../../Sensor/sensor_uwave.h ../../MathAUV/configdata.h ../../MathAUV/kx_protocol.h ../../MathAUV/qkx_coeffs.h ../../MathAUV/qpiconfig.h ../../MathAUV/su_rov.h ../../Connection/pc_protocol.h ../../Connection/protocol.h ../../Connection/udp_protocol.h ../../MathAUV/logreader.h $(DISTDIR)/
+	$(COPY_FILE) --parents ../../MathAUV/logreader.cpp ../../form.cpp ../../graph.cpp ../../main.cpp ../../Navigation/navigationekf.cpp ../../readerjson.cpp ../../Sensor/sensormove.cpp ../../Sensor/signalpropagation.cpp ../../MathAUV/configdata.cpp ../../MathAUV/kx_protocol.cpp ../../MathAUV/qkx_coeffs.cpp ../../MathAUV/qpiconfig.cpp ../../MathAUV/su_rov.cpp ../../setvariable_t.cpp ../../MathAUV/logreader.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents ../../form.ui ../../graph.ui ../../setvariable_t.ui $(DISTDIR)/
 
 
@@ -822,6 +833,7 @@ moc_su_rov.cpp: ../../MathAUV/su_rov.h \
 		../../Connection/pc_protocol.h \
 		../../Connection/udp_protocol.h \
 		../../Connection/protocol.h \
+		../../MathAUV/logreader.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../MathAUV/su_rov.h -o moc_su_rov.cpp
@@ -864,6 +876,251 @@ compiler_lex_clean:
 compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_uic_clean 
 
 ####### Compile
+
+logreader.o: ../../MathAUV/logreader.cpp ../../MathAUV/logreader.h \
+		../../include/Eigen/Dense \
+		../../include/Eigen/Core \
+		../../include/Eigen/src/Core/util/DisableStupidWarnings.h \
+		../../include/Eigen/src/Core/util/Macros.h \
+		../../include/Eigen/src/Core/util/ConfigureVectorization.h \
+		../../include/Eigen/src/Core/util/MKL_support.h \
+		../../include/Eigen/src/misc/blas.h \
+		../../include/Eigen/src/Core/util/Constants.h \
+		../../include/Eigen/src/Core/util/Meta.h \
+		../../include/Eigen/src/Core/arch/HIP/hcc/math_constants.h \
+		../../include/Eigen/src/Core/util/ForwardDeclarations.h \
+		../../include/Eigen/src/Core/util/StaticAssert.h \
+		../../include/Eigen/src/Core/util/XprHelper.h \
+		../../include/Eigen/src/Core/util/Memory.h \
+		../../include/Eigen/src/Core/util/IntegralConstant.h \
+		../../include/Eigen/src/Core/util/SymbolicIndex.h \
+		../../include/Eigen/src/Core/NumTraits.h \
+		../../include/Eigen/src/Core/MathFunctions.h \
+		../../include/Eigen/src/Core/GenericPacketMath.h \
+		../../include/Eigen/src/Core/MathFunctionsImpl.h \
+		../../include/Eigen/src/Core/arch/Default/ConjHelper.h \
+		../../include/Eigen/src/Core/arch/Default/Half.h \
+		../../include/Eigen/src/Core/arch/Default/BFloat16.h \
+		../../include/Eigen/src/Core/arch/Default/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/Default/GenericPacketMathFunctionsFwd.h \
+		../../include/Eigen/src/Core/arch/SSE/PacketMath.h \
+		../../include/Eigen/src/Core/arch/SSE/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/SSE/Complex.h \
+		../../include/Eigen/src/Core/arch/AVX/PacketMath.h \
+		../../include/Eigen/src/Core/arch/AVX/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/AVX/Complex.h \
+		../../include/Eigen/src/Core/arch/AVX512/PacketMath.h \
+		../../include/Eigen/src/Core/arch/AVX512/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/AVX512/Complex.h \
+		../../include/Eigen/src/Core/arch/SSE/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/AVX/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/AVX512/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/AltiVec/PacketMath.h \
+		../../include/Eigen/src/Core/arch/AltiVec/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/AltiVec/Complex.h \
+		../../include/Eigen/src/Core/arch/NEON/PacketMath.h \
+		../../include/Eigen/src/Core/arch/NEON/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/NEON/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/NEON/Complex.h \
+		../../include/Eigen/src/Core/arch/SVE/PacketMath.h \
+		../../include/Eigen/src/Core/arch/SVE/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/SVE/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/ZVector/PacketMath.h \
+		../../include/Eigen/src/Core/arch/ZVector/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/ZVector/Complex.h \
+		../../include/Eigen/src/Core/arch/MSA/PacketMath.h \
+		../../include/Eigen/src/Core/arch/MSA/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/MSA/Complex.h \
+		../../include/Eigen/src/Core/arch/GPU/PacketMath.h \
+		../../include/Eigen/src/Core/arch/GPU/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/GPU/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/SYCL/SyclMemoryModel.h \
+		../../include/Eigen/src/Core/arch/SYCL/InteropHeaders.h \
+		../../include/Eigen/src/Core/arch/SYCL/PacketMath.h \
+		../../include/Eigen/src/Core/arch/SYCL/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/SYCL/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/Default/Settings.h \
+		../../include/Eigen/src/Core/arch/Default/GenericPacketMathFunctions.h \
+		../../include/Eigen/src/Core/functors/TernaryFunctors.h \
+		../../include/Eigen/src/Core/functors/BinaryFunctors.h \
+		../../include/Eigen/src/Core/functors/UnaryFunctors.h \
+		../../include/Eigen/src/Core/functors/NullaryFunctors.h \
+		../../include/Eigen/src/Core/functors/StlFunctors.h \
+		../../include/Eigen/src/Core/functors/AssignmentFunctors.h \
+		../../include/Eigen/src/Core/arch/CUDA/Complex.h \
+		../../include/Eigen/src/Core/util/IndexedViewHelper.h \
+		../../include/Eigen/src/Core/util/ReshapedHelper.h \
+		../../include/Eigen/src/Core/ArithmeticSequence.h \
+		../../include/Eigen/src/Core/IO.h \
+		../../include/Eigen/src/Core/DenseCoeffsBase.h \
+		../../include/Eigen/src/Core/DenseBase.h \
+		../../include/Eigen/src/plugins/CommonCwiseUnaryOps.h \
+		../../include/Eigen/src/plugins/BlockMethods.h \
+		../../include/Eigen/src/plugins/IndexedViewMethods.h \
+		../../include/Eigen/src/plugins/ReshapedMethods.h \
+		../../include/Eigen/src/Core/MatrixBase.h \
+		../../include/Eigen/src/plugins/CommonCwiseBinaryOps.h \
+		../../include/Eigen/src/plugins/MatrixCwiseUnaryOps.h \
+		../../include/Eigen/src/plugins/MatrixCwiseBinaryOps.h \
+		../../include/Eigen/src/Core/EigenBase.h \
+		../../include/Eigen/src/Core/Product.h \
+		../../include/Eigen/src/Core/CoreEvaluators.h \
+		../../include/Eigen/src/Core/AssignEvaluator.h \
+		../../include/Eigen/src/Core/Assign.h \
+		../../include/Eigen/src/Core/ArrayBase.h \
+		../../include/Eigen/src/plugins/ArrayCwiseUnaryOps.h \
+		../../include/Eigen/src/plugins/ArrayCwiseBinaryOps.h \
+		../../include/Eigen/src/Core/util/BlasUtil.h \
+		../../include/Eigen/src/Core/DenseStorage.h \
+		../../include/Eigen/src/Core/NestByValue.h \
+		../../include/Eigen/src/Core/ReturnByValue.h \
+		../../include/Eigen/src/Core/NoAlias.h \
+		../../include/Eigen/src/Core/PlainObjectBase.h \
+		../../include/Eigen/src/Core/Matrix.h \
+		../../include/Eigen/src/Core/Array.h \
+		../../include/Eigen/src/Core/CwiseTernaryOp.h \
+		../../include/Eigen/src/Core/CwiseBinaryOp.h \
+		../../include/Eigen/src/Core/CwiseUnaryOp.h \
+		../../include/Eigen/src/Core/CwiseNullaryOp.h \
+		../../include/Eigen/src/Core/CwiseUnaryView.h \
+		../../include/Eigen/src/Core/SelfCwiseBinaryOp.h \
+		../../include/Eigen/src/Core/Dot.h \
+		../../include/Eigen/src/Core/StableNorm.h \
+		../../include/Eigen/src/Core/Stride.h \
+		../../include/Eigen/src/Core/MapBase.h \
+		../../include/Eigen/src/Core/Map.h \
+		../../include/Eigen/src/Core/Ref.h \
+		../../include/Eigen/src/Core/Block.h \
+		../../include/Eigen/src/Core/VectorBlock.h \
+		../../include/Eigen/src/Core/IndexedView.h \
+		../../include/Eigen/src/Core/Reshaped.h \
+		../../include/Eigen/src/Core/Transpose.h \
+		../../include/Eigen/src/Core/DiagonalMatrix.h \
+		../../include/Eigen/src/Core/Diagonal.h \
+		../../include/Eigen/src/Core/DiagonalProduct.h \
+		../../include/Eigen/src/Core/Redux.h \
+		../../include/Eigen/src/Core/Visitor.h \
+		../../include/Eigen/src/Core/Fuzzy.h \
+		../../include/Eigen/src/Core/Swap.h \
+		../../include/Eigen/src/Core/CommaInitializer.h \
+		../../include/Eigen/src/Core/GeneralProduct.h \
+		../../include/Eigen/src/Core/Solve.h \
+		../../include/Eigen/src/Core/Inverse.h \
+		../../include/Eigen/src/Core/SolverBase.h \
+		../../include/Eigen/src/Core/PermutationMatrix.h \
+		../../include/Eigen/src/Core/Transpositions.h \
+		../../include/Eigen/src/Core/TriangularMatrix.h \
+		../../include/Eigen/src/Core/SelfAdjointView.h \
+		../../include/Eigen/src/Core/products/GeneralBlockPanelKernel.h \
+		../../include/Eigen/src/Core/products/Parallelizer.h \
+		../../include/Eigen/src/Core/ProductEvaluators.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixVector.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixMatrix.h \
+		../../include/Eigen/src/Core/SolveTriangular.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h \
+		../../include/Eigen/src/Core/products/SelfadjointMatrixVector.h \
+		../../include/Eigen/src/Core/products/SelfadjointMatrixMatrix.h \
+		../../include/Eigen/src/Core/products/SelfadjointProduct.h \
+		../../include/Eigen/src/Core/products/SelfadjointRank2Update.h \
+		../../include/Eigen/src/Core/products/TriangularMatrixVector.h \
+		../../include/Eigen/src/Core/products/TriangularMatrixMatrix.h \
+		../../include/Eigen/src/Core/products/TriangularSolverMatrix.h \
+		../../include/Eigen/src/Core/products/TriangularSolverVector.h \
+		../../include/Eigen/src/Core/BandMatrix.h \
+		../../include/Eigen/src/Core/CoreIterators.h \
+		../../include/Eigen/src/Core/ConditionEstimator.h \
+		../../include/Eigen/src/Core/arch/AltiVec/MatrixProduct.h \
+		../../include/Eigen/src/Core/arch/AltiVec/MatrixProductCommon.h \
+		../../include/Eigen/src/Core/arch/AltiVec/MatrixProductMMA.h \
+		../../include/Eigen/src/Core/arch/NEON/GeneralBlockPanelKernel.h \
+		../../include/Eigen/src/Core/BooleanRedux.h \
+		../../include/Eigen/src/Core/Select.h \
+		../../include/Eigen/src/Core/VectorwiseOp.h \
+		../../include/Eigen/src/Core/PartialReduxEvaluator.h \
+		../../include/Eigen/src/Core/Random.h \
+		../../include/Eigen/src/Core/Replicate.h \
+		../../include/Eigen/src/Core/Reverse.h \
+		../../include/Eigen/src/Core/ArrayWrapper.h \
+		../../include/Eigen/src/Core/StlIterators.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixMatrix_BLAS.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixVector_BLAS.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_BLAS.h \
+		../../include/Eigen/src/Core/products/SelfadjointMatrixMatrix_BLAS.h \
+		../../include/Eigen/src/Core/products/SelfadjointMatrixVector_BLAS.h \
+		../../include/Eigen/src/Core/products/TriangularMatrixMatrix_BLAS.h \
+		../../include/Eigen/src/Core/products/TriangularMatrixVector_BLAS.h \
+		../../include/Eigen/src/Core/products/TriangularSolverMatrix_BLAS.h \
+		../../include/Eigen/src/Core/Assign_MKL.h \
+		../../include/Eigen/src/Core/GlobalFunctions.h \
+		../../include/Eigen/src/Core/util/ReenableStupidWarnings.h \
+		../../include/Eigen/LU \
+		../../include/Eigen/src/misc/Kernel.h \
+		../../include/Eigen/src/misc/Image.h \
+		../../include/Eigen/src/LU/FullPivLU.h \
+		../../include/Eigen/src/LU/PartialPivLU.h \
+		../../include/Eigen/src/misc/lapacke.h \
+		../../include/Eigen/src/misc/lapacke_mangling.h \
+		../../include/Eigen/src/LU/PartialPivLU_LAPACKE.h \
+		../../include/Eigen/src/LU/Determinant.h \
+		../../include/Eigen/src/LU/InverseImpl.h \
+		../../include/Eigen/src/LU/arch/InverseSize4.h \
+		../../include/Eigen/Cholesky \
+		../../include/Eigen/Jacobi \
+		../../include/Eigen/src/Jacobi/Jacobi.h \
+		../../include/Eigen/src/Cholesky/LLT.h \
+		../../include/Eigen/src/Cholesky/LDLT.h \
+		../../include/Eigen/src/Cholesky/LLT_LAPACKE.h \
+		../../include/Eigen/QR \
+		../../include/Eigen/Householder \
+		../../include/Eigen/src/Householder/Householder.h \
+		../../include/Eigen/src/Householder/HouseholderSequence.h \
+		../../include/Eigen/src/Householder/BlockHouseholder.h \
+		../../include/Eigen/src/QR/HouseholderQR.h \
+		../../include/Eigen/src/QR/FullPivHouseholderQR.h \
+		../../include/Eigen/src/QR/ColPivHouseholderQR.h \
+		../../include/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
+		../../include/Eigen/src/QR/HouseholderQR_LAPACKE.h \
+		../../include/Eigen/src/QR/ColPivHouseholderQR_LAPACKE.h \
+		../../include/Eigen/SVD \
+		../../include/Eigen/src/misc/RealSvd2x2.h \
+		../../include/Eigen/src/SVD/UpperBidiagonalization.h \
+		../../include/Eigen/src/SVD/SVDBase.h \
+		../../include/Eigen/src/SVD/JacobiSVD.h \
+		../../include/Eigen/src/SVD/BDCSVD.h \
+		../../include/Eigen/src/SVD/JacobiSVD_LAPACKE.h \
+		../../include/Eigen/Geometry \
+		../../include/Eigen/src/Geometry/OrthoMethods.h \
+		../../include/Eigen/src/Geometry/EulerAngles.h \
+		../../include/Eigen/src/Geometry/Homogeneous.h \
+		../../include/Eigen/src/Geometry/RotationBase.h \
+		../../include/Eigen/src/Geometry/Rotation2D.h \
+		../../include/Eigen/src/Geometry/Quaternion.h \
+		../../include/Eigen/src/Geometry/AngleAxis.h \
+		../../include/Eigen/src/Geometry/Transform.h \
+		../../include/Eigen/src/Geometry/Translation.h \
+		../../include/Eigen/src/Geometry/Scaling.h \
+		../../include/Eigen/src/Geometry/Hyperplane.h \
+		../../include/Eigen/src/Geometry/ParametrizedLine.h \
+		../../include/Eigen/src/Geometry/AlignedBox.h \
+		../../include/Eigen/src/Geometry/Umeyama.h \
+		../../include/Eigen/src/Geometry/arch/Geometry_SIMD.h \
+		../../include/Eigen/Eigenvalues \
+		../../include/Eigen/src/Eigenvalues/Tridiagonalization.h \
+		../../include/Eigen/src/Eigenvalues/RealSchur.h \
+		../../include/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+		../../include/Eigen/src/Eigenvalues/EigenSolver.h \
+		../../include/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
+		../../include/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
+		../../include/Eigen/src/Eigenvalues/ComplexSchur.h \
+		../../include/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
+		../../include/Eigen/src/Eigenvalues/RealQZ.h \
+		../../include/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
+		../../include/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+		../../include/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
+		../../include/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
+		../../include/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h \
+		../../Sensor/SensorIMU.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o logreader.o ../../MathAUV/logreader.cpp
 
 form.o: ../../form.cpp ../../form.h \
 		ui_form.h
@@ -1175,6 +1432,7 @@ main.o: ../../main.cpp ../../MathAUV/su_rov.h \
 		../../Connection/pc_protocol.h \
 		../../Connection/udp_protocol.h \
 		../../Connection/protocol.h \
+		../../MathAUV/logreader.h \
 		../../form.h \
 		ui_form.h \
 		../../graph.h \
@@ -1894,12 +2152,258 @@ su_rov.o: ../../MathAUV/su_rov.cpp ../../MathAUV/su_rov.h \
 		../../Sensor/SensorPressure.h \
 		../../Connection/pc_protocol.h \
 		../../Connection/udp_protocol.h \
-		../../Connection/protocol.h
+		../../Connection/protocol.h \
+		../../MathAUV/logreader.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o su_rov.o ../../MathAUV/su_rov.cpp
 
 setvariable_t.o: ../../setvariable_t.cpp ../../setvariable_t.h \
 		ui_setvariable_t.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o setvariable_t.o ../../setvariable_t.cpp
+
+logreader.o: ../../MathAUV/logreader.cpp ../../MathAUV/logreader.h \
+		../../include/Eigen/Dense \
+		../../include/Eigen/Core \
+		../../include/Eigen/src/Core/util/DisableStupidWarnings.h \
+		../../include/Eigen/src/Core/util/Macros.h \
+		../../include/Eigen/src/Core/util/ConfigureVectorization.h \
+		../../include/Eigen/src/Core/util/MKL_support.h \
+		../../include/Eigen/src/misc/blas.h \
+		../../include/Eigen/src/Core/util/Constants.h \
+		../../include/Eigen/src/Core/util/Meta.h \
+		../../include/Eigen/src/Core/arch/HIP/hcc/math_constants.h \
+		../../include/Eigen/src/Core/util/ForwardDeclarations.h \
+		../../include/Eigen/src/Core/util/StaticAssert.h \
+		../../include/Eigen/src/Core/util/XprHelper.h \
+		../../include/Eigen/src/Core/util/Memory.h \
+		../../include/Eigen/src/Core/util/IntegralConstant.h \
+		../../include/Eigen/src/Core/util/SymbolicIndex.h \
+		../../include/Eigen/src/Core/NumTraits.h \
+		../../include/Eigen/src/Core/MathFunctions.h \
+		../../include/Eigen/src/Core/GenericPacketMath.h \
+		../../include/Eigen/src/Core/MathFunctionsImpl.h \
+		../../include/Eigen/src/Core/arch/Default/ConjHelper.h \
+		../../include/Eigen/src/Core/arch/Default/Half.h \
+		../../include/Eigen/src/Core/arch/Default/BFloat16.h \
+		../../include/Eigen/src/Core/arch/Default/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/Default/GenericPacketMathFunctionsFwd.h \
+		../../include/Eigen/src/Core/arch/SSE/PacketMath.h \
+		../../include/Eigen/src/Core/arch/SSE/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/SSE/Complex.h \
+		../../include/Eigen/src/Core/arch/AVX/PacketMath.h \
+		../../include/Eigen/src/Core/arch/AVX/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/AVX/Complex.h \
+		../../include/Eigen/src/Core/arch/AVX512/PacketMath.h \
+		../../include/Eigen/src/Core/arch/AVX512/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/AVX512/Complex.h \
+		../../include/Eigen/src/Core/arch/SSE/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/AVX/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/AVX512/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/AltiVec/PacketMath.h \
+		../../include/Eigen/src/Core/arch/AltiVec/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/AltiVec/Complex.h \
+		../../include/Eigen/src/Core/arch/NEON/PacketMath.h \
+		../../include/Eigen/src/Core/arch/NEON/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/NEON/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/NEON/Complex.h \
+		../../include/Eigen/src/Core/arch/SVE/PacketMath.h \
+		../../include/Eigen/src/Core/arch/SVE/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/SVE/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/ZVector/PacketMath.h \
+		../../include/Eigen/src/Core/arch/ZVector/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/ZVector/Complex.h \
+		../../include/Eigen/src/Core/arch/MSA/PacketMath.h \
+		../../include/Eigen/src/Core/arch/MSA/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/MSA/Complex.h \
+		../../include/Eigen/src/Core/arch/GPU/PacketMath.h \
+		../../include/Eigen/src/Core/arch/GPU/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/GPU/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/SYCL/SyclMemoryModel.h \
+		../../include/Eigen/src/Core/arch/SYCL/InteropHeaders.h \
+		../../include/Eigen/src/Core/arch/SYCL/PacketMath.h \
+		../../include/Eigen/src/Core/arch/SYCL/MathFunctions.h \
+		../../include/Eigen/src/Core/arch/SYCL/TypeCasting.h \
+		../../include/Eigen/src/Core/arch/Default/Settings.h \
+		../../include/Eigen/src/Core/arch/Default/GenericPacketMathFunctions.h \
+		../../include/Eigen/src/Core/functors/TernaryFunctors.h \
+		../../include/Eigen/src/Core/functors/BinaryFunctors.h \
+		../../include/Eigen/src/Core/functors/UnaryFunctors.h \
+		../../include/Eigen/src/Core/functors/NullaryFunctors.h \
+		../../include/Eigen/src/Core/functors/StlFunctors.h \
+		../../include/Eigen/src/Core/functors/AssignmentFunctors.h \
+		../../include/Eigen/src/Core/arch/CUDA/Complex.h \
+		../../include/Eigen/src/Core/util/IndexedViewHelper.h \
+		../../include/Eigen/src/Core/util/ReshapedHelper.h \
+		../../include/Eigen/src/Core/ArithmeticSequence.h \
+		../../include/Eigen/src/Core/IO.h \
+		../../include/Eigen/src/Core/DenseCoeffsBase.h \
+		../../include/Eigen/src/Core/DenseBase.h \
+		../../include/Eigen/src/plugins/CommonCwiseUnaryOps.h \
+		../../include/Eigen/src/plugins/BlockMethods.h \
+		../../include/Eigen/src/plugins/IndexedViewMethods.h \
+		../../include/Eigen/src/plugins/ReshapedMethods.h \
+		../../include/Eigen/src/Core/MatrixBase.h \
+		../../include/Eigen/src/plugins/CommonCwiseBinaryOps.h \
+		../../include/Eigen/src/plugins/MatrixCwiseUnaryOps.h \
+		../../include/Eigen/src/plugins/MatrixCwiseBinaryOps.h \
+		../../include/Eigen/src/Core/EigenBase.h \
+		../../include/Eigen/src/Core/Product.h \
+		../../include/Eigen/src/Core/CoreEvaluators.h \
+		../../include/Eigen/src/Core/AssignEvaluator.h \
+		../../include/Eigen/src/Core/Assign.h \
+		../../include/Eigen/src/Core/ArrayBase.h \
+		../../include/Eigen/src/plugins/ArrayCwiseUnaryOps.h \
+		../../include/Eigen/src/plugins/ArrayCwiseBinaryOps.h \
+		../../include/Eigen/src/Core/util/BlasUtil.h \
+		../../include/Eigen/src/Core/DenseStorage.h \
+		../../include/Eigen/src/Core/NestByValue.h \
+		../../include/Eigen/src/Core/ReturnByValue.h \
+		../../include/Eigen/src/Core/NoAlias.h \
+		../../include/Eigen/src/Core/PlainObjectBase.h \
+		../../include/Eigen/src/Core/Matrix.h \
+		../../include/Eigen/src/Core/Array.h \
+		../../include/Eigen/src/Core/CwiseTernaryOp.h \
+		../../include/Eigen/src/Core/CwiseBinaryOp.h \
+		../../include/Eigen/src/Core/CwiseUnaryOp.h \
+		../../include/Eigen/src/Core/CwiseNullaryOp.h \
+		../../include/Eigen/src/Core/CwiseUnaryView.h \
+		../../include/Eigen/src/Core/SelfCwiseBinaryOp.h \
+		../../include/Eigen/src/Core/Dot.h \
+		../../include/Eigen/src/Core/StableNorm.h \
+		../../include/Eigen/src/Core/Stride.h \
+		../../include/Eigen/src/Core/MapBase.h \
+		../../include/Eigen/src/Core/Map.h \
+		../../include/Eigen/src/Core/Ref.h \
+		../../include/Eigen/src/Core/Block.h \
+		../../include/Eigen/src/Core/VectorBlock.h \
+		../../include/Eigen/src/Core/IndexedView.h \
+		../../include/Eigen/src/Core/Reshaped.h \
+		../../include/Eigen/src/Core/Transpose.h \
+		../../include/Eigen/src/Core/DiagonalMatrix.h \
+		../../include/Eigen/src/Core/Diagonal.h \
+		../../include/Eigen/src/Core/DiagonalProduct.h \
+		../../include/Eigen/src/Core/Redux.h \
+		../../include/Eigen/src/Core/Visitor.h \
+		../../include/Eigen/src/Core/Fuzzy.h \
+		../../include/Eigen/src/Core/Swap.h \
+		../../include/Eigen/src/Core/CommaInitializer.h \
+		../../include/Eigen/src/Core/GeneralProduct.h \
+		../../include/Eigen/src/Core/Solve.h \
+		../../include/Eigen/src/Core/Inverse.h \
+		../../include/Eigen/src/Core/SolverBase.h \
+		../../include/Eigen/src/Core/PermutationMatrix.h \
+		../../include/Eigen/src/Core/Transpositions.h \
+		../../include/Eigen/src/Core/TriangularMatrix.h \
+		../../include/Eigen/src/Core/SelfAdjointView.h \
+		../../include/Eigen/src/Core/products/GeneralBlockPanelKernel.h \
+		../../include/Eigen/src/Core/products/Parallelizer.h \
+		../../include/Eigen/src/Core/ProductEvaluators.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixVector.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixMatrix.h \
+		../../include/Eigen/src/Core/SolveTriangular.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h \
+		../../include/Eigen/src/Core/products/SelfadjointMatrixVector.h \
+		../../include/Eigen/src/Core/products/SelfadjointMatrixMatrix.h \
+		../../include/Eigen/src/Core/products/SelfadjointProduct.h \
+		../../include/Eigen/src/Core/products/SelfadjointRank2Update.h \
+		../../include/Eigen/src/Core/products/TriangularMatrixVector.h \
+		../../include/Eigen/src/Core/products/TriangularMatrixMatrix.h \
+		../../include/Eigen/src/Core/products/TriangularSolverMatrix.h \
+		../../include/Eigen/src/Core/products/TriangularSolverVector.h \
+		../../include/Eigen/src/Core/BandMatrix.h \
+		../../include/Eigen/src/Core/CoreIterators.h \
+		../../include/Eigen/src/Core/ConditionEstimator.h \
+		../../include/Eigen/src/Core/arch/AltiVec/MatrixProduct.h \
+		../../include/Eigen/src/Core/arch/AltiVec/MatrixProductCommon.h \
+		../../include/Eigen/src/Core/arch/AltiVec/MatrixProductMMA.h \
+		../../include/Eigen/src/Core/arch/NEON/GeneralBlockPanelKernel.h \
+		../../include/Eigen/src/Core/BooleanRedux.h \
+		../../include/Eigen/src/Core/Select.h \
+		../../include/Eigen/src/Core/VectorwiseOp.h \
+		../../include/Eigen/src/Core/PartialReduxEvaluator.h \
+		../../include/Eigen/src/Core/Random.h \
+		../../include/Eigen/src/Core/Replicate.h \
+		../../include/Eigen/src/Core/Reverse.h \
+		../../include/Eigen/src/Core/ArrayWrapper.h \
+		../../include/Eigen/src/Core/StlIterators.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixMatrix_BLAS.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixVector_BLAS.h \
+		../../include/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_BLAS.h \
+		../../include/Eigen/src/Core/products/SelfadjointMatrixMatrix_BLAS.h \
+		../../include/Eigen/src/Core/products/SelfadjointMatrixVector_BLAS.h \
+		../../include/Eigen/src/Core/products/TriangularMatrixMatrix_BLAS.h \
+		../../include/Eigen/src/Core/products/TriangularMatrixVector_BLAS.h \
+		../../include/Eigen/src/Core/products/TriangularSolverMatrix_BLAS.h \
+		../../include/Eigen/src/Core/Assign_MKL.h \
+		../../include/Eigen/src/Core/GlobalFunctions.h \
+		../../include/Eigen/src/Core/util/ReenableStupidWarnings.h \
+		../../include/Eigen/LU \
+		../../include/Eigen/src/misc/Kernel.h \
+		../../include/Eigen/src/misc/Image.h \
+		../../include/Eigen/src/LU/FullPivLU.h \
+		../../include/Eigen/src/LU/PartialPivLU.h \
+		../../include/Eigen/src/misc/lapacke.h \
+		../../include/Eigen/src/misc/lapacke_mangling.h \
+		../../include/Eigen/src/LU/PartialPivLU_LAPACKE.h \
+		../../include/Eigen/src/LU/Determinant.h \
+		../../include/Eigen/src/LU/InverseImpl.h \
+		../../include/Eigen/src/LU/arch/InverseSize4.h \
+		../../include/Eigen/Cholesky \
+		../../include/Eigen/Jacobi \
+		../../include/Eigen/src/Jacobi/Jacobi.h \
+		../../include/Eigen/src/Cholesky/LLT.h \
+		../../include/Eigen/src/Cholesky/LDLT.h \
+		../../include/Eigen/src/Cholesky/LLT_LAPACKE.h \
+		../../include/Eigen/QR \
+		../../include/Eigen/Householder \
+		../../include/Eigen/src/Householder/Householder.h \
+		../../include/Eigen/src/Householder/HouseholderSequence.h \
+		../../include/Eigen/src/Householder/BlockHouseholder.h \
+		../../include/Eigen/src/QR/HouseholderQR.h \
+		../../include/Eigen/src/QR/FullPivHouseholderQR.h \
+		../../include/Eigen/src/QR/ColPivHouseholderQR.h \
+		../../include/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
+		../../include/Eigen/src/QR/HouseholderQR_LAPACKE.h \
+		../../include/Eigen/src/QR/ColPivHouseholderQR_LAPACKE.h \
+		../../include/Eigen/SVD \
+		../../include/Eigen/src/misc/RealSvd2x2.h \
+		../../include/Eigen/src/SVD/UpperBidiagonalization.h \
+		../../include/Eigen/src/SVD/SVDBase.h \
+		../../include/Eigen/src/SVD/JacobiSVD.h \
+		../../include/Eigen/src/SVD/BDCSVD.h \
+		../../include/Eigen/src/SVD/JacobiSVD_LAPACKE.h \
+		../../include/Eigen/Geometry \
+		../../include/Eigen/src/Geometry/OrthoMethods.h \
+		../../include/Eigen/src/Geometry/EulerAngles.h \
+		../../include/Eigen/src/Geometry/Homogeneous.h \
+		../../include/Eigen/src/Geometry/RotationBase.h \
+		../../include/Eigen/src/Geometry/Rotation2D.h \
+		../../include/Eigen/src/Geometry/Quaternion.h \
+		../../include/Eigen/src/Geometry/AngleAxis.h \
+		../../include/Eigen/src/Geometry/Transform.h \
+		../../include/Eigen/src/Geometry/Translation.h \
+		../../include/Eigen/src/Geometry/Scaling.h \
+		../../include/Eigen/src/Geometry/Hyperplane.h \
+		../../include/Eigen/src/Geometry/ParametrizedLine.h \
+		../../include/Eigen/src/Geometry/AlignedBox.h \
+		../../include/Eigen/src/Geometry/Umeyama.h \
+		../../include/Eigen/src/Geometry/arch/Geometry_SIMD.h \
+		../../include/Eigen/Eigenvalues \
+		../../include/Eigen/src/Eigenvalues/Tridiagonalization.h \
+		../../include/Eigen/src/Eigenvalues/RealSchur.h \
+		../../include/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+		../../include/Eigen/src/Eigenvalues/EigenSolver.h \
+		../../include/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
+		../../include/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
+		../../include/Eigen/src/Eigenvalues/ComplexSchur.h \
+		../../include/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
+		../../include/Eigen/src/Eigenvalues/RealQZ.h \
+		../../include/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
+		../../include/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+		../../include/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
+		../../include/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
+		../../include/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h \
+		../../Sensor/SensorIMU.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o logreader.o ../../MathAUV/logreader.cpp
 
 moc_form.o: moc_form.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_form.o moc_form.cpp

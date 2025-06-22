@@ -18,7 +18,7 @@ public:
 
     void predict(double dt,
                  const Eigen::Vector3d& linear_acc,
-                 double angular_vel_z);
+                 double angular_vel_z, double psi_imu);
 
     bool correct(double measured_distance, double delta_t, double max_speed = 3);
     void correctDepth(double measured_z);
@@ -42,6 +42,9 @@ private:
 
     // Нормализация угла в [-π, π]
     double normalizeAngle(double angle) {
-        return std::fmod(angle + M_PI, 2*M_PI) - M_PI;
+        angle = std::fmod(angle + M_PI, 2 * M_PI);
+        if (angle < 0)
+            angle += 2 * M_PI;
+        return angle - M_PI;
     }
 };

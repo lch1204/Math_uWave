@@ -206,38 +206,48 @@ void SU_ROV::resetModel(){
 
 void SU_ROV::tick(const float Ttimer)
 {
-    simulation_time_ += Ttimer; // Ttimer = 0.01
+    log->run();
+    simulation_time_ += 0.05; // Ttimer = 0.01
     double usilenie = 500;
     BFS_DRK(10,0,0,1*usilenie,0,0);
 
+    auto imu_data_ = log->imu;
+    double depth_ = log->depth;
+    double distance = log->distance;
+    Eigen::Vector2d coord_auv = log->coord_auv;
 
     runge(X[50][0], X[60][0], X[70][0], X[80][0], X[90][0], X[100][0],Ttimer,Ttimer);
     sen_uWave->run_simulation_with_MathAUV(x_global, y_global, z_global, Ttimer);
-    Eigen::Vector3d true_angular_rates(a[18],a[19],a[20]);
+    Eigen::Vector3d true_angular_rates(imu_data_.angularRates[0],a[19],a[20]);
     Eigen::Vector3d true_linear_vel(vx_local, vy_local, vz_local);
-    senIMU->update(a[4], a[5], a[6],true_angular_rates,true_linear_vel,Ttimer);
-    senPressure->update(z_global,Ttimer);
+//    Eigen::Vector3d true_angular_rates(a[18],a[19],a[20]);
+//    Eigen::Vector3d true_linear_vel(vx_local, vy_local, vz_local);
+//    senIMU->update(a[4], a[5], a[6],true_angular_rates,true_linear_vel,Ttimer);
+    senIMU->update(imu_data_.orientation[0],imu_data_.orientation[1],imu_data_.orientation[2],imu_data_.angularRates,imu_data_.accelerationLocal,Ttimer);
+    senPressure->update(depth_,Ttimer);
+//    senPressure->update(z_global,Ttimer);
 
 
     // 1. Получение данных с датчиков
     auto imu_data = senIMU->getOutput();
     double depth = senPressure->getOutput();
-    double distance = sen_uWave->getOutput();
+//    double distance = sen_uWave->getOutput();
+
 
     // 2. Прогноз фильтра
     X[151][0] = imu_data.angularRates(2);
-    ekf_->predict(Ttimer, imu_data.accelerationLocal, imu_data.angularRates(2));
+    ekf_->predict(Ttimer, imu_data.accelerationLocal, imu_data.angularRates[2], imu_data.orientation[2]);
 
 //    // Коррекция по расстоянию до маяка
 //    if (distance > 0) {
 //        double time = simulation_time_ - last_correction_time_;
-//        qDebug() << "time" << time;
+//        qDebug() << "time" << time<< "distance" << distance;
 //        (ekf_->correct(distance, time, 2));
 //            last_correction_time_ = simulation_time_;
 //    }
 
-    // 4. Коррекция глубины по датчику давления
-    ekf_->correctDepth(depth);
+////     4. Коррекция глубины по датчику давления
+//    ekf_->correctDepth(depth);
 
     X[102][0] = distance;
 
@@ -256,16 +266,22 @@ void SU_ROV::constructor()
     X[121][1] = a[1];  // vx_local
     X[122][1] = a[2];  // vy_local
     X[123][1] = a[3];  // vz_local
+    log = new LogReader("logData-hydro-24-06-23-10-41-10.csv");
+//    log = new LogReader("logData-hydro-24-06-23-10-07-42.csv");
 
-    X[124][1]  = state_(0) = ekf_x = a[15] = protocol->rec_data.data.sensor.positions[0][0];
-    X[125][1]  = state_(1) = ekf_y = a[16] = protocol->rec_data.data.sensor.positions[0][1];
+    log->run();
+    Eigen::Vector2d coord_auv = log->coord_auv;
+    ;
+
+    X[124][1]  = state_(0) = ekf_x = a[15] = (log->coord_auv[0]);
+    X[125][1]  = state_(1) = ekf_y = a[16] = (log->coord_auv[1]);
     X[126][1]  = state_(2) = ekf_z = a[17] = protocol->rec_data.data.sensor.positions[0][2];
     da[15] = 0;
     da[16] = 0;
     da[17] = 0;
 
-    double xb = protocol->rec_data.data.sensor.positions[1][0];
-    double yb = protocol->rec_data.data.sensor.positions[1][1];
+    double xb = 0;
+    double yb = 0;
     double zb = protocol->rec_data.data.sensor.positions[1][2];
     beacon_position_ << xb, yb,zb; // Пример координат маяка
     qDebug() << "xb, yb,zb" << xb <<"yb" << yb << "zb"<< zb;
@@ -284,6 +300,7 @@ void SU_ROV::constructor()
 
     senIMU = new IMUSensor(dt);
     senPressure = new PressureSensor();
+
 
     Upl = Upp = Usl = Usp = Uzl = Uzp = 0;
 
@@ -352,7 +369,8 @@ void SU_ROV::updateNavigationDisplay() {
     static double rr =0;
     Eigen::VectorXd state = ekf_->getState();
     emit updateCoromAUVEkf(state[0], state[1]);
-    emit updateCoromAUVReal(x_global, y_global);
+    Eigen::Vector2d coord_auv = log->coord_auv;
+//    emit updateCoromAUVReal(coord_auv[0], coord_auv[1]);
     qDebug() << "x_global" << x_global << "; y_global" << y_global<< "; z_global" << z_global;
     qDebug() << "state[0]" << state[0] << "; state[1]" << state[1]<< "; state[2]" << state[2];
 
@@ -367,6 +385,7 @@ void SU_ROV::updateNavigationDisplay() {
     qDebug() << "rr" << rr;
 
     auto imu_data = senIMU->getOutput();
+//    auto imu_data = log->imu;
     emit updateVelocityVector_ekf(imu_data.speedGlobal.x(), imu_data.speedGlobal.y());
     qDebug() << "speedGlobal.x: "<< imu_data.speedGlobal.x() << ", speedGlobal.y: "<< imu_data.speedGlobal.y();
     qDebug() << "vx_global: "<<vx_global <<", vy_global: "<<vy_global;

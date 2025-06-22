@@ -77,7 +77,7 @@ Form::Form(QWidget *parent)
     chartView->setMinimumSize(600,600);
     chartView->setRubberBand(QChartView::RectangleRubberBand);
 
-    beaconPositionReal->append(5,5);//здесь на графике отображаю
+    beaconPositionReal->append(0,0);//здесь на графике отображаю
     // Инициализация графических элементов для наконечника стрелки
     velocityArrowHead = new QGraphicsPolygonItem();
     chartView->scene()->addItem(velocityArrowHead);
@@ -114,8 +114,8 @@ void Form::setCircle(double r)
 
     // Отрисовка новой окружности
     const int numPoints = 100;  // Количество точек для аппроксимации окружности
-    const double centerX = 10.0;
-    const double centerY = 10.0;
+    const double centerX = 0.0;
+    const double centerY = 0.0;
 
     for (int i = 0; i < numPoints; ++i) {
         double angle = 2 * M_PI * i / numPoints;
