@@ -229,12 +229,12 @@ void SU_ROV::tick(const float Ttimer)
     ekf_->predict(Ttimer, imu_data.accelerationLocal, imu_data.angularRates(2));
 
 //    // Коррекция по расстоянию до маяка
-//    if (distance > 0) {
-//        double time = simulation_time_ - last_correction_time_;
-//        qDebug() << "time" << time;
-//        (ekf_->correct(distance, time, 2));
-//            last_correction_time_ = simulation_time_;
-//    }
+    if (distance > 0) {
+        double time = simulation_time_ - last_correction_time_;
+        qDebug() << "time" << time;
+        (ekf_->correct(distance, time, 2));
+            last_correction_time_ = simulation_time_;
+    }
 
     // 4. Коррекция глубины по датчику давления
     ekf_->correctDepth(depth);
@@ -282,7 +282,7 @@ void SU_ROV::constructor()
     sen_uWave->addPositionAUV(a[15],a[16],a[17]);
     sen_uWave->addPositionModem(xb,yb,zb);
 
-    senIMU = new IMUSensor(dt);
+    senIMU = new IMUSensor();
     senPressure = new PressureSensor();
 
     Upl = Upp = Usl = Usp = Uzl = Uzp = 0;
@@ -384,9 +384,9 @@ void SU_ROV::updateNavigationDisplay() {
         protocol->send_data.payload.map.real_vx = vx_global;
         protocol->send_data.payload.map.real_vy = vy_global;
         protocol->send_data.payload.map.real_x = x_global;
-//        protocol->send_data.payload.map.real_y = y_global;
+        protocol->send_data.payload.map.real_y = y_global;
         protocol->send_data.payload.graph.ekf_x = state[0];
-//        protocol->send_data.payload.graph.ekf_y = state[1];
+        protocol->send_data.payload.graph.ekf_y = state[1];
         protocol->send_data.payload.graph.ekf_z = state[2];
         protocol->send_data.payload.map.real_y = y_global;
         protocol->send_data.payload.graph.ekf_y = state[1];

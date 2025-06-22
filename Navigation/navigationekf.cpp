@@ -26,10 +26,19 @@ void NavigationEKF::predict(double dt,
                             const Eigen::Vector3d& linear_acc,
                             double angular_vel_z) {
     // 1. Обновление курса (в радианах)
+//<<<<<<< Updated upstream
     double psi = state_(5) + angular_vel_z * dt; // частота 100 гц
      state_(5) = normalizeAngle(psi);
     X[150][0] = state_(5);
     X[152][0] = psi;
+//=======
+//    double psi = state_(6) + angular_vel_z * dt;
+//     state_(6) = normalizeAngle(psi);
+////    state_(6) = (psi);
+//    X[150][0] = state_(6);
+//    X[152][0] = psi;
+//    state_(6) = angular_vel_z*M_PI/180;
+//>>>>>>> Stashed changes
 
     // 2. Преобразование локальных скоростей в глобальные
     Eigen::Matrix3d R = yawToRotation(state_(5));

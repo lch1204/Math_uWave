@@ -111,6 +111,7 @@ public:
         double filt_roll  = roll_filter.filter(true_roll);
         double filt_pitch = pitch_filter.filter(true_pitch);
         double filt_yaw   = yaw_filter.filter(true_yaw);
+        qDebug() << "true_yaw" << true_yaw;
 
         double meas_roll  = quantize(filt_roll + orientation_bias(0) + noise(noise_dist_orientation_roll), resolution);
         double meas_pitch = quantize(filt_pitch + orientation_bias(1) + noise(noise_dist_orientation_pitch), resolution);
@@ -169,6 +170,8 @@ public:
         double roll  = imu_output.orientation(0);
         double pitch = imu_output.orientation(1);
         double yaw   = imu_output.orientation(2);
+
+        qDebug() << "imu_output.orientation(2)" << imu_output.orientation(2);
 
         // Построим матрицу поворота из локальной системы (body) в глобальную (NED)
         Eigen::Matrix3d R;

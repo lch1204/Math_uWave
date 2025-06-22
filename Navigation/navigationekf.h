@@ -42,6 +42,9 @@ private:
 
     // Нормализация угла в [-π, π]
     double normalizeAngle(double angle) {
-        return std::fmod(angle + M_PI, 2*M_PI) - M_PI;
+        angle = std::fmod(angle + M_PI, 2 * M_PI);
+        if (angle < 0)
+            angle += 2 * M_PI;
+        return angle - M_PI;
     }
 };
