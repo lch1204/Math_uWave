@@ -171,6 +171,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf \
+		../../.qmake.stash \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
@@ -193,6 +194,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf \
 		../../../../Math_uWave.pro ../../Sensor/SensorIMU.h \
 		../../Sensor/SensorPressure.h \
+		../../Sensor/positionanalyzer.h \
 		../../form.h \
 		../../Navigation/navigationekf.h \
 		../../graph.h \
@@ -312,6 +314,7 @@ Makefile: ../../Math_uWave.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf \
+		.qmake.stash \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
@@ -412,6 +415,7 @@ Makefile: ../../Math_uWave.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang/qmake.conf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf:
+.qmake.stash:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf:
@@ -448,7 +452,7 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../../Sensor/SensorIMU.h ../../Sensor/SensorPressure.h ../../form.h ../../Navigation/navigationekf.h ../../graph.h ../../readerjson.h ../../Sensor/sensormove.h ../../Sensor/signalpropagation.h ../../setvariable_t.h ../../stucturs.h ../../Sensor/sensor_uwave.h ../../MathAUV/configdata.h ../../MathAUV/kx_protocol.h ../../MathAUV/qkx_coeffs.h ../../MathAUV/qpiconfig.h ../../MathAUV/su_rov.h ../../Connection/pc_protocol.h ../../Connection/protocol.h ../../Connection/udp_protocol.h $(DISTDIR)/
+	$(COPY_FILE) --parents ../../Sensor/SensorIMU.h ../../Sensor/SensorPressure.h ../../Sensor/positionanalyzer.h ../../form.h ../../Navigation/navigationekf.h ../../graph.h ../../readerjson.h ../../Sensor/sensormove.h ../../Sensor/signalpropagation.h ../../setvariable_t.h ../../stucturs.h ../../Sensor/sensor_uwave.h ../../MathAUV/configdata.h ../../MathAUV/kx_protocol.h ../../MathAUV/qkx_coeffs.h ../../MathAUV/qpiconfig.h ../../MathAUV/su_rov.h ../../Connection/pc_protocol.h ../../Connection/protocol.h ../../Connection/udp_protocol.h $(DISTDIR)/
 	$(COPY_FILE) --parents ../../form.cpp ../../graph.cpp ../../main.cpp ../../Navigation/navigationekf.cpp ../../readerjson.cpp ../../Sensor/sensormove.cpp ../../Sensor/signalpropagation.cpp ../../MathAUV/configdata.cpp ../../MathAUV/kx_protocol.cpp ../../MathAUV/qkx_coeffs.cpp ../../MathAUV/qpiconfig.cpp ../../MathAUV/su_rov.cpp ../../setvariable_t.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents ../../form.ui ../../graph.ui ../../setvariable_t.ui $(DISTDIR)/
 
@@ -493,6 +497,8 @@ moc_form.cpp: ../../form.h \
 
 moc_graph.cpp: ../../graph.h \
 		ui_graph.h \
+		../../setvariable_t.h \
+		ui_setvariable_t.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../graph.h -o moc_graph.cpp
@@ -822,6 +828,7 @@ moc_su_rov.cpp: ../../MathAUV/su_rov.h \
 		../../Connection/pc_protocol.h \
 		../../Connection/udp_protocol.h \
 		../../Connection/protocol.h \
+		../../Sensor/positionanalyzer.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/lch/Math_uWave/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-clang -I/home/lch/Math_uWave -I/home/lch/Math_uWave/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCharts -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtNetwork -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/llvm-18/lib/clang/18/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../MathAUV/su_rov.h -o moc_su_rov.cpp
@@ -870,7 +877,9 @@ form.o: ../../form.cpp ../../form.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o form.o ../../form.cpp
 
 graph.o: ../../graph.cpp ../../graph.h \
-		ui_graph.h
+		ui_graph.h \
+		../../setvariable_t.h \
+		ui_setvariable_t.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o graph.o ../../graph.cpp
 
 main.o: ../../main.cpp ../../MathAUV/su_rov.h \
@@ -1175,10 +1184,13 @@ main.o: ../../main.cpp ../../MathAUV/su_rov.h \
 		../../Connection/pc_protocol.h \
 		../../Connection/udp_protocol.h \
 		../../Connection/protocol.h \
+		../../Sensor/positionanalyzer.h \
 		../../form.h \
 		ui_form.h \
 		../../graph.h \
-		ui_graph.h
+		ui_graph.h \
+		../../setvariable_t.h \
+		ui_setvariable_t.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../../main.cpp
 
 navigationekf.o: ../../Navigation/navigationekf.cpp ../../Navigation/navigationekf.h \
@@ -1894,7 +1906,8 @@ su_rov.o: ../../MathAUV/su_rov.cpp ../../MathAUV/su_rov.h \
 		../../Sensor/SensorPressure.h \
 		../../Connection/pc_protocol.h \
 		../../Connection/udp_protocol.h \
-		../../Connection/protocol.h
+		../../Connection/protocol.h \
+		../../Sensor/positionanalyzer.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o su_rov.o ../../MathAUV/su_rov.cpp
 
 setvariable_t.o: ../../setvariable_t.cpp ../../setvariable_t.h \

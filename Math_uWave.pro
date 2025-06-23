@@ -23,6 +23,7 @@ SOURCES += \
 HEADERS += \
     Sensor/SensorIMU.h \
     Sensor/SensorPressure.h \
+    Sensor/positionanalyzer.h \
     form.h \
     Navigation/navigationekf.h \
     graph.h \

@@ -15,11 +15,15 @@ NavigationEKF::NavigationEKF(const Eigen::Vector3d& beacon_position)
         /* Скорости (vx,vy,vz) */ 1.34e-4, 3.4e-4, 2.0e-5,
         /* Курс (ψ) */ 1.0e-4;
 
+//    /* Позиция (x,y,z) */ 6.7, 3.4, 2.0,
+//    /* Скорости (vx,vy,vz) */ 1.34, 3.4, 2.0,
+//    /* Курс (ψ) */ 1.0;
+
     // Для глубины:
     R_depth_ = Eigen::MatrixXd::Identity(1,1) * 0.1;
 
     // Для расстояния до маяка:
-    R_distance_ = Eigen::MatrixXd::Identity(1,1) * 0.1;
+    R_distance_ = Eigen::MatrixXd::Identity(1,1) * 10;
 }
 
 void NavigationEKF::predict(double dt,

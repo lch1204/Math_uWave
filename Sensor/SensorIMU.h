@@ -61,15 +61,15 @@ public:
     IMUSensor(double resolution = 0.000001)
         : resolution(resolution), gen(rd()),
         // для измерений углов ориентации задаём шум по СКО (крен: 0.27, дифферент: 0.2, курс: 0.27)
-        noise_dist_orientation_roll(0.0, 0.0),
-        noise_dist_orientation_pitch(0.0, 0.0),
-        noise_dist_orientation_yaw(0.0, 0.0),
+        noise_dist_orientation_roll(0.0001, 0.0001),
+        noise_dist_orientation_pitch(0.0001, 0.0001),
+        noise_dist_orientation_yaw(0.0001, 0.0001),
         // для гироскопа можно задать относительно малый шум (например, 0.01)
         noise_dist_gyro(0.0, 0.00),
         // для акселерометра (СКО по оx: 0.0134, по oy: 0.034, по oz: 0.998)
-        noise_dist_acc_x(0.0, 0.00),
-        noise_dist_acc_y(0.0, 0.0),
-        noise_dist_acc_z(0.0, 0.00),
+        noise_dist_acc_x(0.0001, 0.00001),
+        noise_dist_acc_y(0.0001, 0.0001),
+        noise_dist_acc_z(0.0001, 0.00001),
         // инициализируем фильтры для измерения ориентации
         roll_filter(0.006472, -0.9411, 0.01618, 0.03236, 0.01618),
         pitch_filter(0.006472, -0.9411, 0.01618, 0.03236, 0.01618),

@@ -11,6 +11,7 @@
 #include "../Sensor/SensorIMU.h"
 #include "../Sensor/SensorPressure.h"
 #include "../Connection/pc_protocol.h"
+#include "../Sensor/positionanalyzer.h"
 
 #define ANPA_MOD_CNT 24
 
@@ -109,6 +110,7 @@ public:
     void resetModel();
     void tick(const float Ttimer);
     void tickExchange();
+    PositionAnalyzer analyzer;
 
     float Fx,Fy,Fz; //total forces for XYZ-axis
     float Mx,My,Mz; //total moments for XYZ-axis

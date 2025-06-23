@@ -207,8 +207,8 @@ void SU_ROV::resetModel(){
 void SU_ROV::tick(const float Ttimer)
 {
     simulation_time_ += Ttimer; // Ttimer = 0.01
-    double usilenie = 500;
-    BFS_DRK(10,0,0,1*usilenie,0,0);
+    double usilenie = 4000;
+    BFS_DRK(0,0,0,1*usilenie,0,0);
 
 
     runge(X[50][0], X[60][0], X[70][0], X[80][0], X[90][0], X[100][0],Ttimer,Ttimer);
@@ -376,6 +376,7 @@ void SU_ROV::updateNavigationDisplay() {
     emit updateZ(z_global, state[2], simulation_time_);
     if (startt)
     {
+        analyzer.update(x_global, y_global, state[0], state[1]);
 //        if (X[102][0]>0) protocol->send_data.payload.map.circle_radius = X[102][0];
         protocol->send_data.payload.map.ekf_vx = state[3];
         protocol->send_data.payload.map.ekf_vy = state[4];
